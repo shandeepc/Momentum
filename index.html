@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Momentum - Daily Task Board</title>
+<meta name="description" content="A local, offline Kanban-style to-do board.">
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body data-theme="dark">
+
+<!-- ============ Top bar ============ -->
+<header class="topbar">
+  <div class="brand"><span class="mark"></span>Momentum<small>LOCAL BOARD</small></div>
+
+  <div class="search-wrap">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+    <input type="text" id="searchInput" placeholder="Search tasks…" autocomplete="off">
+    <span class="kbd-hint">/</span>
+  </div>
+
+  <div class="topbar-actions">
+    <button class="profile-chip" id="profileChipBtn" title="Switch user">
+      <span class="profile-avatar" id="profileChipAvatar"></span>
+      <span class="pname" id="profileChipName"></span>
+    </button>
+    <button class="icon-btn" id="syncBtn" title="GitHub sync settings">
+      <!-- <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 5.64a9 9 0 1 1-12.73 0"/><path d="M12 3v9"/></svg> -->
+       <!-- <svg width="800px" height="800px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <path fill="none" stroke="currentColor" stroke-width="2" d="M5,19 L16,19 C19.866,19 23,15.866 23,12 L23,9 M8,15 L4,19 L8,23 M19,5 L8,5 C4.134,5 1,8.134 1,12 L1,15 M16,1 L20,5 L16,9"/>
+</svg> -->
+<svg width="512" height="512" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <!-- Sync arrows (moved farther from the center) -->
+  <path
+    fill="none"
+    stroke="#b7b8c7"
+    stroke-width="1"
+    stroke-linecap="square"
+    stroke-linejoin="miter"
+    d="M3.5,20
+       L16.5,20
+       C20.09,20 23,17.09 23,13.5
+       L23,8
+       M7.5,16
+       L3.5,20
+       L7.5,24
+       M20.5,4
+       L7.5,4
+       C3.91,4 1,6.91 1,10.5
+       L1,16
+       M16.5,0
+       L20.5,4
+       L16.5,8"/>
+
+  <!-- GitHub mark -->
+  <g transform="translate(12 12) scale(0.05)">
+    <path
+      fill="#b7b8c7"
+      d="
+        M0,-105
+        C-58,-105 -105,-58 -105,0
+        C-105,46 -75,84 -34,98
+        C-29,99 -27,96 -27,92
+        L-27,73
+        C-59,80 -66,58 -66,58
+        C-71,46 -79,43 -79,43
+        C-89,36 -78,36 -78,36
+        C-67,37 -61,48 -61,48
+        C-51,65 -35,60 -27,56
+        C-26,49 -23,44 -20,41
+        C-45,38 -71,29 -71,-11
+        C-71,-23 -67,-33 -60,-41
+        C-61,-44 -65,-56 -59,-73
+        C-59,-73 -49,-76 -27,-61
+        C-18,-64 -9,-65 0,-65
+        C9,-65 18,-64 27,-61
+        C49,-76 59,-73 59,-73
+        C65,-56 61,-44 60,-41
+        C67,-33 71,-23 71,-11
+        C71,29 45,38 20,41
+        C24,45 27,52 27,63
+        L27,92
+        C27,96 29,99 34,98
+        C75,84 105,46 105,0
+        C105,-58 58,-105 0,-105
+        Z"/>
+  </g>
+</svg>
+
+      <span class="sync-dot" id="syncDot"></span>
+    </button>
+    
+    <button class="icon-btn" id="shortcutsBtn" title="Keyboard shortcuts">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 13h.01M18 13h.01M8 13h8"/></svg>
+    </button>
+    <button class="icon-btn" id="importBtn" title="Import JSON">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    </button>
+    <button class="icon-btn" id="exportBtn" title="Export JSON">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21V9"/><path d="M7 14l5-5 5 5"/><path d="M4 3h16"/></svg>
+    </button>
+    <button class="icon-btn" id="archiveBtn" title="Archive">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="5" rx="1"/><path d="M4 9v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9"/><path d="M10 13h4"/></svg>
+    </button>
+    <button class="icon-btn" id="themeBtn" title="Toggle theme">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+    <button class="btn primary" id="newTaskBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+      New task
+    </button>
+  </div>
+</header>
+
+<!-- ============ Toolbar (filters/sort) ============ -->
+<div class="toolbar">
+  <div class="seg" id="priorityFilterSeg">
+    <button data-val="all" class="active">All</button>
+    <button data-val="low">Low</button>
+    <button data-val="medium">Medium</button>
+    <button data-val="high">High</button>
+  </div>
+
+  <select class="select" id="statusFilterSelect">
+    <option value="all">All columns</option>
+    <option value="daily">Daily only</option>
+    <option value="inprogress">In Progress only</option>
+    <option value="completed">Completed only</option>
+  </select>
+
+  <select class="select" id="sortSelect">
+    <option value="manual">Board order (drag position)</option>
+    <option value="created_desc">Newest created</option>
+    <option value="created_asc">Oldest created</option>
+    <option value="due_asc">Due date ↑</option>
+    <option value="due_desc">Due date ↓</option>
+    <option value="priority_desc">Priority: High → Low</option>
+    <option value="priority_asc">Priority: Low → High</option>
+  </select>
+
+  <div class="toolbar-spacer"></div>
+  <span class="result-count" id="resultCount"></span>
+</div>
+
+<!-- ============ Overall progress ============ -->
+<div class="overall-progress" id="overallProgress">
+  <div class="op-track">
+    <div class="op-fill" id="opFill" style="width:0%"></div>
+  </div>
+  <div class="op-info">
+    <span class="op-pct" id="opPct">0%</span>
+    <span class="op-stats" id="opStats">0 of 0 tasks completed</span>
+  </div>
+</div>
+
+<!-- ============ Board ============ -->
+<main class="board-scroll">
+  <div class="board" id="board">
+    <!-- Columns injected by JS -->
+  </div>
+</main>
+
+<div class="footer-note">Everything on this board lives in this browser only — no server, no sync, no accounts.</div>
+
+<!-- ============ Task Modal (Add/Edit) ============ -->
+<div class="modal-overlay" id="taskModalOverlay">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <h2 id="taskModalTitle">New task</h2>
+      <button class="icon-btn" id="taskModalClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+    <form id="taskForm">
+      <div class="modal-body">
+        <div class="field">
+          <label for="titleInput">Title</label>
+          <input type="text" id="titleInput" maxlength="120" placeholder="e.g. Configure AADGroup connector auth" required>
+        </div>
+        <div class="field">
+          <label for="descInput">Description <span class="hint">optional</span></label>
+          <textarea id="descInput" maxlength="1000" placeholder="Add details, context, or notes…"></textarea>
+        </div>
+        <div class="field">
+          <label>Priority</label>
+          <div class="pri-select" id="priSelect">
+            <div class="pri-opt low" data-val="low">Low</div>
+            <div class="pri-opt medium active" data-val="medium">Medium</div>
+            <div class="pri-opt high" data-val="high">High</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Subtasks <span class="hint" id="subtaskProgressHint">optional</span></label>
+          <div class="subtask-editor">
+            <div class="subtask-list" id="subtaskList"></div>
+            <div class="subtask-add-row">
+              <input type="text" id="subtaskInput" maxlength="200" placeholder="Add a subtask and press Enter…">
+              <button type="button" class="btn ghost" id="subtaskAddBtn">Add</button>
+            </div>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="dueInput">Due date <span class="hint">optional</span></label>
+            <input type="date" id="dueInput">
+          </div>
+          <div class="field">
+            <label for="statusInput">Column</label>
+            <select id="statusInput">
+              <option value="daily">Daily</option>
+              <option value="inprogress">In Progress</option>
+              <option value="completed">Completed</option>
+            </select>
+          </div>
+        </div>
+        <div class="meta-readout" id="metaReadout" style="display:none;"></div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn ghost" id="taskCancelBtn">Cancel</button>
+        <button type="submit" class="btn primary" id="taskSaveBtn">Add task</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ Confirm Delete Modal ============ -->
+<div class="modal-overlay" id="confirmModalOverlay">
+  <div class="modal small" role="dialog" aria-modal="true">
+    <div class="modal-body" style="padding-top:26px;">
+      <div class="confirm-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></div>
+      <p class="confirm-text" id="confirmText">Delete this task? This can't be undone.</p>
+    </div>
+    <div class="modal-foot" style="justify-content:center;">
+      <button type="button" class="btn ghost" id="confirmCancelBtn">Cancel</button>
+      <button type="button" class="btn danger" id="confirmOkBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Archive Modal ============ -->
+<div class="modal-overlay" id="archiveModalOverlay">
+  <div class="modal" role="dialog" aria-modal="true" style="max-width:600px;">
+    <div class="modal-head">
+      <h2>Archive</h2>
+      <button class="icon-btn" id="archiveModalClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal-body" id="archiveList" style="gap:10px;"></div>
+  </div>
+</div>
+
+<!-- ============ Shortcuts Modal ============ -->
+<div class="modal-overlay" id="shortcutsModalOverlay">
+  <div class="modal small" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <h2>Keyboard shortcuts</h2>
+      <button class="icon-btn" id="shortcutsModalClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="shortcut-grid">
+        <div class="shortcut-row"><span>New task</span><div class="keys"><kbd>N</kbd></div></div>
+        <div class="shortcut-row"><span>Focus search</span><div class="keys"><kbd>/</kbd></div></div>
+        <div class="shortcut-row"><span>Toggle theme</span><div class="keys"><kbd>T</kbd></div></div>
+        <div class="shortcut-row"><span>Close dialog</span><div class="keys"><kbd>Esc</kbd></div></div>
+        <div class="shortcut-row"><span>Export board</span><div class="keys"><kbd>Ctrl</kbd><kbd>E</kbd></div></div>
+        <div class="shortcut-row"><span>Show this panel</span><div class="keys"><kbd>?</kbd></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Profile picker (no password — just a username) ============ -->
+<div class="modal-overlay" id="profileModalOverlay">
+  <div class="modal" role="dialog" aria-modal="true" style="max-width:440px;">
+    <div class="modal-head">
+      <h2>Who's using this board?</h2>
+    </div>
+    <div class="modal-body">
+      <div class="profile-list" id="profileList"></div>
+      <div class="profile-divider">or create a new profile</div>
+      <div class="field">
+        <label for="newUsernameInput">Username</label>
+        <input type="text" id="newUsernameInput" maxlength="40" placeholder="e.g. Shandeep" autocomplete="off">
+        <span class="hint">No password — just pick a name to keep your tasks separate from anyone else using this board.</span>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn ghost" id="profileCancelBtn" style="display:none;">Cancel</button>
+      <button type="button" class="btn primary" id="profileContinueBtn">Create & continue</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="importFileInput" accept="application/json" style="display:none;">
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- ============ GitHub Sync settings ============ -->
+<div class="modal-overlay" id="syncModalOverlay">
+  <div class="modal" role="dialog" aria-modal="true" style="max-width:520px;">
+    <div class="modal-head">
+      <h2>GitHub sync</h2>
+      <button class="icon-btn" id="syncModalClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="sync-warning">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+        <span>Use a <b>fine-grained personal access token</b> scoped to only this one repo, with only "Contents" read/write permission. It's stored solely in this browser — never written into the synced file itself. If this repo is public, anyone can <i>read</i> the synced file once it's pushed, even though only token-holders can write to it.</span>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label for="ghOwnerInput">Repo owner</label>
+          <input type="text" id="ghOwnerInput" placeholder="e.g. shandeepc" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="ghRepoInput">Repository</label>
+          <input type="text" id="ghRepoInput" placeholder="e.g. Momentum-Storage" autocomplete="off">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="ghBranchInput">Branch</label>
+          <input type="text" id="ghBranchInput" placeholder="main" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="ghPathInput">File path</label>
+          <input type="text" id="ghPathInput" placeholder="data/momentum-board.json" autocomplete="off">
+        </div>
+      </div>
+      <div class="field">
+        <label for="ghTokenInput">Personal access token</label>
+        <input type="password" id="ghTokenInput" placeholder="github_pat_…" autocomplete="off">
+        <span class="hint">Create one at github.com → Settings → Developer settings → 
+          Personal access tokens → Fine-grained tokens.</span>
+      </div>
+      <label class="sync-toggle-row">
+        <input type="checkbox" id="ghAutoSyncInput" checked>
+        <span>Auto-sync a few seconds after each change (also always available via "Sync now")</span>
+      </label>
+
+      <div class="sync-status-line" id="syncStatusLine">Not connected yet.</div>
+    </div>
+    <div class="modal-foot" style="justify-content:space-between;">
+      <button type="button" class="btn danger" id="ghDisconnectBtn">Disconnect</button>
+      <div style="display:flex; gap:10px;">
+        <button type="button" class="btn ghost" id="ghPullBtn">Pull latest</button>
+        <button type="button" class="btn primary" id="ghSaveBtn">Save & sync now</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="./js/script.js"></script>
+</body>
+</html>
