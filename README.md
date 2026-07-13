@@ -315,7 +315,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 👨‍💻 Author
 
-**Rakesh Vadnala**
+**Shandeep Srinivas**
 
 IAM Consultant | SailPoint IdentityIQ Developer | Saviynt Engineer
 
