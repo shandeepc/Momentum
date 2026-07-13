@@ -685,7 +685,8 @@ function renderBoard(){
       </div>
       <div class="column-progress" title="${shareOfBoard}% of active tasks"><div style="width:${shareOfBoard}%"></div></div>
       <div class="tasklist" data-status="${col.key}">
-        ${colTasks.length ? colTasks.map(cardHTML).join("") : (q ? "" : emptyColHTML())}
+        ${q ? "" : emptyColHTML()}
+        ${colTasks.map(cardHTML).join("")}
         ${colTasks.length === 0 && q ? `<div class="empty-col"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><span>No matches in ${col.label}.</span></div>` : ""}
       </div>
     `;
@@ -865,8 +866,8 @@ function attachDnD(){
 }
 
 function onPointerDown(e){
-  // ignore drags starting on buttons or the subtask checklist (checkboxes/toggle)
-  if(e.target.closest("button") || e.target.closest(".subtask-panel")) return;
+  // ignore drags starting on buttons, inputs or subtask checklist
+  if(e.target.closest("button, input, textarea, select") || e.target.closest(".subtask-panel")) return;
   if(e.button !== undefined && e.button !== 0 && e.pointerType === "mouse") return;
 
   const card = e.currentTarget;
@@ -889,6 +890,7 @@ function onPointerDown(e){
       card.classList.add('selected');
     }
   }
+
   const rect = card.getBoundingClientRect();
   dragState = {
     id: card.dataset.id,
@@ -902,8 +904,20 @@ function onPointerDown(e){
     started: false,
     fromList: card.closest(".tasklist")
   };
+
   window.addEventListener("pointermove", onPointerMove);
-  window.addEventListener("pointerup", onPointerUp, { once:true });
+  window.addEventListener("pointerup", onPointerUp);
+  window.addEventListener("pointercancel", onPointerUp);
+}
+
+function updateEmptyColumns(){
+  document.querySelectorAll(".tasklist").forEach(list=>{
+    const hasCards = list.querySelector(".card:not(.dragging)");
+    const emptyCol = list.querySelector(".empty-col");
+    if(emptyCol){
+      emptyCol.style.display = hasCards ? "none" : "";
+    }
+  });
 }
 
 function startDrag(){
@@ -917,6 +931,7 @@ function startDrag(){
 
   const ghost = card.cloneNode(true);
   ghost.classList.add("drag-ghost");
+  ghost.classList.remove("dragging");
   
   // If multiple items, add badge
   if (selectedTasks.size > 1) {
@@ -930,12 +945,18 @@ function startDrag(){
   ghost.style.margin = "0";
   ghost.style.top = "0";
   ghost.style.left = "0";
-  ghost.style.transform = `translate(${dragState.startX - dragState.offsetX}px, ${dragState.startY - dragState.offsetY}px) rotate(2deg) scale(1.03)`;
+  ghost.style.transition = "none";
+  ghost.style.animation = "none";
+  ghost.style.pointerEvents = "none";
+  ghost.style.transform = `translate3d(${dragState.startX - dragState.offsetX}px, ${dragState.startY - dragState.offsetY}px, 0) rotate(2deg) scale(1.03)`;
   ghost.querySelectorAll(".card-actions").forEach(a=>a.remove());
   document.body.appendChild(ghost);
+  
   dragState.ghost = ghost;
   dragState.started = true;
   document.body.style.userSelect = "none";
+  document.body.style.webkitUserSelect = "none";
+  updateEmptyColumns();
 }
 
 function onPointerMove(e){
@@ -948,30 +969,41 @@ function onPointerMove(e){
     startDrag();
   }
 
+  if(e.cancelable) e.preventDefault();
+
   const ghost = dragState.ghost;
-  ghost.style.transform = `translate(${e.clientX - dragState.offsetX}px, ${e.clientY - dragState.offsetY}px) rotate(2deg) scale(1.03)`;
+  if(ghost){
+    const gx = e.clientX - dragState.offsetX;
+    const gy = e.clientY - dragState.offsetY;
+    ghost.style.transform = `translate3d(${gx}px, ${gy}px, 0) rotate(2deg) scale(1.03)`;
+  }
 
   // find column under pointer
   document.querySelectorAll(".column").forEach(c=>c.classList.remove("drop-hover"));
   
   const elUnder = document.elementFromPoint(e.clientX, e.clientY);
-  
-  const col = elUnder && elUnder.closest(".column");
+  if(!elUnder) return;
+
+  const col = elUnder.closest(".column");
   if(col) col.classList.add("drop-hover");
   dragState.hoverColumn = col;
 
-  const list = elUnder && elUnder.closest(".tasklist");
+  let list = elUnder.closest(".tasklist");
+  if(!list && col){
+    list = col.querySelector(".tasklist");
+  }
+
   if(list){
     const after = getDragAfterElement(list, e.clientY);
     const placeholder = dragState.card;
     if(after == null){
       if(list.lastElementChild !== placeholder) list.appendChild(placeholder);
     } else if(after !== placeholder){
-       list.insertBefore(placeholder, after);
+      list.insertBefore(placeholder, after);
     }
+    updateEmptyColumns();
 
-    // Auto-scroll the column when dragging near its top/bottom edge, so
-    // long columns can still be dropped into below the visible fold.
+    // Auto-scroll the column when dragging near its top/bottom edge
     const listRect = list.getBoundingClientRect();
     const edge = 44;
     if(e.clientY < listRect.top + edge){
@@ -986,7 +1018,7 @@ function getDragAfterElement(container, y){
   const els = [...container.querySelectorAll(".card:not(.dragging)")];
   return els.reduce((closest, child)=>{
     const box = child.getBoundingClientRect();
-    const offset = y - box.top - box.height/2;
+    const offset = y - (box.top + box.height / 2);
     if(offset < 0 && offset > closest.offset){
       return { offset, element: child };
     } else {
@@ -996,43 +1028,64 @@ function getDragAfterElement(container, y){
 }
 
 function computeOrderFromDOM(list, cardEl){
-  // Places the card's new `order` value between its current DOM neighbors,
-  // so it lands exactly where the live drag preview left it.
   if(!list) return Date.now();
   const domCards = [...list.querySelectorAll(".card")];
   const idx = domCards.indexOf(cardEl);
+  if(idx === -1) return Date.now();
+
   const prevEl = idx > 0 ? domCards[idx-1] : null;
-  const nextEl = idx >= 0 && idx < domCards.length - 1 ? domCards[idx+1] : null;
+  const nextEl = idx < domCards.length - 1 ? domCards[idx+1] : null;
   const prevTask = prevEl ? findTask(prevEl.dataset.id) : null;
   const nextTask = nextEl ? findTask(nextEl.dataset.id) : null;
-  const prevOrder = prevTask ? (prevTask.order ?? 0) : null;
-  const nextOrder = nextTask ? (nextTask.order ?? 0) : null;
+  const prevOrder = prevTask && prevTask.order != null ? prevTask.order : null;
+  const nextOrder = nextTask && nextTask.order != null ? nextTask.order : null;
 
-  if(prevOrder == null && nextOrder == null) return Date.now();
-  if(prevOrder == null) return nextOrder - 1;
-  if(nextOrder == null) return prevOrder + 1;
-  return (prevOrder + nextOrder) / 2;
+  if(prevOrder == null && nextOrder == null) return 100;
+  if(prevOrder == null) return nextOrder - 100;
+  if(nextOrder == null) return prevOrder + 100;
+  if(nextOrder - prevOrder > 1) {
+    return (prevOrder + nextOrder) / 2;
+  }
+  return prevOrder + 1;
 }
 
 function onPointerUp(e){
   window.removeEventListener("pointermove", onPointerMove);
+  window.removeEventListener("pointerup", onPointerUp);
+  window.removeEventListener("pointercancel", onPointerUp);
   document.body.style.userSelect = "";
+  document.body.style.webkitUserSelect = "";
   if(!dragState) return;
 
   if(dragState.started){
     document.querySelectorAll(".column").forEach(c=>c.classList.remove("drop-hover"));
     if(dragState.ghost) dragState.ghost.remove();
 
-    // The live preview already reparented dragState.card into whichever
-    // tasklist it was hovering over — read its final resting place directly
-    // rather than relying only on the last hover event (more robust if the
-    // pointer ends exactly on a column edge).
     const finalList = dragState.card.parentElement && dragState.card.parentElement.classList.contains("tasklist")
       ? dragState.card.parentElement
       : dragState.fromList;
     const finalColumn = finalList ? finalList.closest(".column") : null;
     const newStatus = finalColumn ? finalColumn.dataset.status : dragState.fromList.dataset.status;
-    const newOrder = computeOrderFromDOM(finalList, dragState.card);
+
+    // Switch to manual sort mode if user reordered cards manually
+    if(state.settings.sort !== "manual"){
+      state.settings.sort = "manual";
+      const sortSel = document.getElementById("sortSelect");
+      if(sortSel){
+        sortSel.value = "manual";
+        sortSel.dispatchEvent(new Event("change"));
+      }
+    }
+
+    // Normalize DOM orders for all cards in the target column cleanly
+    const domCards = [...finalList.querySelectorAll(".card")];
+    domCards.forEach((cardEl, idx) => {
+      const t = findTask(cardEl.dataset.id);
+      if(t) t.order = (idx + 1) * 100;
+    });
+
+    const targetTask = findTask(dragState.card.dataset.id);
+    const newOrder = targetTask ? targetTask.order : computeOrderFromDOM(finalList, dragState.card);
 
     dragState.card.classList.remove("dragging");
     
@@ -1043,10 +1096,9 @@ function onPointerUp(e){
     let offset = 0;
     Array.from(selectedTasks).forEach(taskId => {
       dropTaskAt(taskId, newStatus, newOrder + offset);
-      offset += 100; // stagger order slightly to keep them sequential
+      offset += 10;
     });
     
-    // Clear selection after drag
     selectedTasks.clear();
     document.querySelectorAll('.card.selected').forEach(c => c.classList.remove('selected'));
   }

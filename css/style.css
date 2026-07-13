@@ -368,9 +368,14 @@ select.select:focus{ outline:none; border-color:var(--accent-1); }
   gap:6px; padding:34px 16px; color:var(--text-2); text-align:center;
   border:1.5px dashed var(--border); border-radius:var(--radius-md);
   margin:4px 2px;
+  pointer-events:none;
 }
 .empty-col svg{ width:26px; height:26px; opacity:.5; }
 .empty-col span{ font-size:12.5px; }
+
+.tasklist:has(.card) .empty-col{
+  display:none !important;
+}
 
 /* ============ Card ============ */
 .card{
@@ -393,16 +398,23 @@ select.select:focus{ outline:none; border-color:var(--accent-1); }
 .card.priority-medium{ border-left-color:var(--med); }
 .card.priority-high{ border-left-color:var(--high); }
 
-.card:hover{ transform:translateY(-2px); box-shadow:var(--shadow); border-color:var(--accent-1); }
+.card:not(.dragging):hover{ transform:translateY(-2px); box-shadow:var(--shadow); border-color:var(--accent-1); }
 .card.dragging{
-  opacity:.35;
+  opacity:.28 !important;
+  border:1.5px dashed var(--border) !important;
+  box-shadow:none !important;
+  pointer-events:none !important;
+  transition:none !important;
+  animation:none !important;
 }
 .card.drag-ghost{
-  position:fixed; z-index:999; pointer-events:none;
-  box-shadow:0 24px 50px -12px rgba(0,0,0,.5);
-  transform:rotate(2deg) scale(1.03);
-  cursor:grabbing;
+  position:fixed; z-index:99999; pointer-events:none !important;
+  box-shadow:0 24px 50px -12px rgba(0,0,0,.55);
+  cursor:grabbing !important;
   width:var(--ghost-w);
+  transition:none !important;
+  animation:none !important;
+  will-change:transform;
 }
 
 .card-top{ display:flex; align-items:flex-start; gap:8px; }
