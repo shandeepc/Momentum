@@ -856,6 +856,7 @@ document.getElementById("confirmOkBtn").addEventListener("click", ()=>{
    DRAG & DROP — pointer-events based (works for mouse + touch)
    ============================================================ */
 let dragState = null;
+let selectedTasks = new Set();
 
 function attachDnD(){
   document.querySelectorAll(".card").forEach(card=>{
@@ -869,6 +870,25 @@ function onPointerDown(e){
   if(e.button !== undefined && e.button !== 0 && e.pointerType === "mouse") return;
 
   const card = e.currentTarget;
+  const taskId = card.dataset.id;
+  
+  if (e.ctrlKey || e.metaKey) {
+    if (selectedTasks.has(taskId)) {
+      selectedTasks.delete(taskId);
+      card.classList.remove('selected');
+    } else {
+      selectedTasks.add(taskId);
+      card.classList.add('selected');
+    }
+  } else {
+    // Only clear if we click an unselected card
+    if (!selectedTasks.has(taskId)) {
+      selectedTasks.clear();
+      document.querySelectorAll('.card.selected').forEach(c => c.classList.remove('selected'));
+      selectedTasks.add(taskId);
+      card.classList.add('selected');
+    }
+  }
   const rect = card.getBoundingClientRect();
   dragState = {
     id: card.dataset.id,
@@ -889,9 +909,28 @@ function onPointerDown(e){
 function startDrag(){
   const { card, width } = dragState;
   card.classList.add("dragging");
+  
+  // hide other selected cards
+  document.querySelectorAll('.card.selected').forEach(c => {
+    if (c !== card) c.style.display = 'none';
+  });
+
   const ghost = card.cloneNode(true);
   ghost.classList.add("drag-ghost");
+  
+  // If multiple items, add badge
+  if (selectedTasks.size > 1) {
+    const badge = document.createElement('div');
+    badge.className = 'drag-multi-badge';
+    badge.textContent = '+' + (selectedTasks.size - 1);
+    ghost.appendChild(badge);
+  }
+  
   ghost.style.setProperty("--ghost-w", width + "px");
+  ghost.style.margin = "0";
+  ghost.style.top = "0";
+  ghost.style.left = "0";
+  ghost.style.transform = `translate(${dragState.startX - dragState.offsetX}px, ${dragState.startY - dragState.offsetY}px) rotate(2deg) scale(1.03)`;
   ghost.querySelectorAll(".card-actions").forEach(a=>a.remove());
   document.body.appendChild(ghost);
   dragState.ghost = ghost;
@@ -910,19 +949,17 @@ function onPointerMove(e){
   }
 
   const ghost = dragState.ghost;
-  ghost.style.left = (e.clientX - dragState.offsetX) + "px";
-  ghost.style.top = (e.clientY - dragState.offsetY) + "px";
+  ghost.style.transform = `translate(${e.clientX - dragState.offsetX}px, ${e.clientY - dragState.offsetY}px) rotate(2deg) scale(1.03)`;
 
   // find column under pointer
   document.querySelectorAll(".column").forEach(c=>c.classList.remove("drop-hover"));
-  ghost.style.display = "none";
+  
   const elUnder = document.elementFromPoint(e.clientX, e.clientY);
-  ghost.style.display = "";
+  
   const col = elUnder && elUnder.closest(".column");
   if(col) col.classList.add("drop-hover");
   dragState.hoverColumn = col;
 
-  // reorder preview within target list
   const list = elUnder && elUnder.closest(".tasklist");
   if(list){
     const after = getDragAfterElement(list, e.clientY);
@@ -930,7 +967,7 @@ function onPointerMove(e){
     if(after == null){
       if(list.lastElementChild !== placeholder) list.appendChild(placeholder);
     } else if(after !== placeholder){
-      list.insertBefore(placeholder, after);
+       list.insertBefore(placeholder, after);
     }
 
     // Auto-scroll the column when dragging near its top/bottom edge, so
@@ -998,7 +1035,20 @@ function onPointerUp(e){
     const newOrder = computeOrderFromDOM(finalList, dragState.card);
 
     dragState.card.classList.remove("dragging");
-    dropTaskAt(dragState.id, newStatus, newOrder);
+    
+    // restore display for selected cards
+    document.querySelectorAll('.card.selected').forEach(c => c.style.display = '');
+
+    // Move all selected tasks
+    let offset = 0;
+    Array.from(selectedTasks).forEach(taskId => {
+      dropTaskAt(taskId, newStatus, newOrder + offset);
+      offset += 100; // stagger order slightly to keep them sequential
+    });
+    
+    // Clear selection after drag
+    selectedTasks.clear();
+    document.querySelectorAll('.card.selected').forEach(c => c.classList.remove('selected'));
   }
   dragState = null;
 }

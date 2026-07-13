@@ -6,6 +6,7 @@
 <title>Momentum - Daily Task Board</title>
 <meta name="description" content="A local, offline Kanban-style to-do board.">
 <link rel="stylesheet" href="./css/style.css">
+<link rel="stylesheet" href="./css/custom-ui.css">
 </head>
 <body data-theme="dark">
 
@@ -200,7 +201,7 @@
         <div class="row2">
           <div class="field">
             <label for="dueInput">Due date <span class="hint">optional</span></label>
-            <input type="date" id="dueInput">
+            <input type="date" id="dueInput" placeholder="yyyy/mm/dd">
           </div>
           <div class="field">
             <label for="statusInput">Column</label>
@@ -347,6 +348,7 @@
   </div>
 </div>
 
+<script src="./js/custom-ui.js"></script>
 <script src="./js/script.js"></script>
 </body>
 </html>
