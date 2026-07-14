@@ -931,18 +931,16 @@ function onPointerDown(e){
 
   const card = e.currentTarget;
   const taskId = card.dataset.id;
+  const wasSelected = selectedTasks.has(taskId);
   
   if (e.ctrlKey || e.metaKey) {
-    if (selectedTasks.has(taskId)) {
-      selectedTasks.delete(taskId);
-      card.classList.remove('selected');
-    } else {
+    if (!wasSelected) {
       selectedTasks.add(taskId);
       card.classList.add('selected');
     }
   } else {
     // Only clear if we click an unselected card
-    if (!selectedTasks.has(taskId)) {
+    if (!wasSelected) {
       selectedTasks.clear();
       document.querySelectorAll('.card.selected').forEach(c => c.classList.remove('selected'));
       selectedTasks.add(taskId);
@@ -961,6 +959,8 @@ function onPointerDown(e){
     width: rect.width,
     ghost: null,
     started: false,
+    wasSelected,
+    ctrlAtStart: (e.ctrlKey || e.metaKey),
     fromList: card.closest(".tasklist")
   };
 
@@ -982,36 +982,95 @@ function updateEmptyColumns(){
 function startDrag(){
   const { card, width } = dragState;
   card.classList.add("dragging");
-  
-  // hide other selected cards
+
+  const ghostWrapper = document.createElement("div");
+  ghostWrapper.className = "drag-ghost-wrapper";
+  ghostWrapper.style.setProperty("--ghost-w", width + "px");
+  ghostWrapper.style.position = "fixed";
+  ghostWrapper.style.top = "0";
+  ghostWrapper.style.left = "0";
+  ghostWrapper.style.width = width + "px";
+  ghostWrapper.style.pointerEvents = "none";
+  ghostWrapper.style.zIndex = "99999";
+  ghostWrapper.style.transform = `translate3d(${dragState.startX - dragState.offsetX}px, ${dragState.startY - dragState.offsetY}px, 0)`;
+
+  if (selectedTasks.size > 1) {
+    // Order selected cards so the dragged card is first (top of stack)
+    const otherIds = Array.from(selectedTasks).filter(id => id !== card.dataset.id);
+    const orderedIds = [card.dataset.id, ...otherIds];
+    
+    // Show up to 6 cards in the visual fan deck
+    const stackIds = orderedIds.slice(0, 6);
+    
+    stackIds.forEach((id, idx) => {
+      const el = document.querySelector(`.card[data-id="${id}"]`);
+      if(!el) return;
+      const clone = el.cloneNode(true);
+      clone.style.display = ""; // Ensure cloned card is fully visible!
+      clone.classList.add("drag-ghost-item");
+      clone.classList.remove("dragging", "selected");
+      clone.querySelectorAll(".card-actions").forEach(a=>a.remove());
+      
+      clone.style.position = "absolute";
+      clone.style.width = width + "px";
+      clone.style.transformOrigin = "50% 90%";
+
+      if (idx === 0) {
+        clone.style.top = "0px";
+        clone.style.left = "0px";
+        clone.style.zIndex = "100";
+        clone.style.transform = "rotate(0deg) scale(1.02)";
+        clone.style.boxShadow = "0 24px 50px -12px rgba(0,0,0,0.6)";
+
+        const badge = document.createElement('div');
+        badge.className = 'drag-multi-badge';
+        badge.textContent = '+' + (selectedTasks.size - 1);
+        clone.appendChild(badge);
+      } else {
+        // Symmetrical playing card fan arc around the center grabbed card:
+        // odd idx swings right (+), even idx swings left (-)
+        const step = Math.floor((idx + 1) / 2);
+        const sign = (idx % 2 !== 0) ? 1 : -1;
+        const angle = sign * step * 14; // +14°, -14°, +28°, -28°...
+        const offsetX = sign * step * 38; // +38px, -38px, +76px, -76px...
+        const offsetY = step * step * 4;  // +4px, +4px, +16px, +16px...
+
+        clone.style.top = `${offsetY}px`;
+        clone.style.left = `${offsetX}px`;
+        clone.style.zIndex = `${100 - idx}`;
+        clone.style.opacity = `${1 - step * 0.05}`;
+        clone.style.transform = `rotate(${angle}deg) scale(${1 - step * 0.02})`;
+        clone.style.boxShadow = "0 14px 32px -6px rgba(0,0,0,0.45)";
+        clone.style.border = "1px solid var(--border)";
+      }
+
+      ghostWrapper.appendChild(clone);
+    });
+  } else {
+    const ghost = card.cloneNode(true);
+    ghost.style.display = "";
+    ghost.classList.add("drag-ghost-item");
+    ghost.classList.remove("dragging", "selected");
+    ghost.style.position = "absolute";
+    ghost.style.top = "0px";
+    ghost.style.left = "0px";
+    ghost.style.width = width + "px";
+    ghost.style.zIndex = "100";
+    ghost.style.transformOrigin = "50% 90%";
+    ghost.style.transform = "rotate(2deg) scale(1.03)";
+    ghost.style.boxShadow = "0 24px 50px -12px rgba(0,0,0,0.55)";
+    ghost.querySelectorAll(".card-actions").forEach(a=>a.remove());
+    ghostWrapper.appendChild(ghost);
+  }
+
+  // Hide other selected cards on the board ONLY AFTER cloning them into the ghost fan!
   document.querySelectorAll('.card.selected').forEach(c => {
     if (c !== card) c.style.display = 'none';
   });
 
-  const ghost = card.cloneNode(true);
-  ghost.classList.add("drag-ghost");
-  ghost.classList.remove("dragging");
+  document.body.appendChild(ghostWrapper);
   
-  // If multiple items, add badge
-  if (selectedTasks.size > 1) {
-    const badge = document.createElement('div');
-    badge.className = 'drag-multi-badge';
-    badge.textContent = '+' + (selectedTasks.size - 1);
-    ghost.appendChild(badge);
-  }
-  
-  ghost.style.setProperty("--ghost-w", width + "px");
-  ghost.style.margin = "0";
-  ghost.style.top = "0";
-  ghost.style.left = "0";
-  ghost.style.transition = "none";
-  ghost.style.animation = "none";
-  ghost.style.pointerEvents = "none";
-  ghost.style.transform = `translate3d(${dragState.startX - dragState.offsetX}px, ${dragState.startY - dragState.offsetY}px, 0) rotate(2deg) scale(1.03)`;
-  ghost.querySelectorAll(".card-actions").forEach(a=>a.remove());
-  document.body.appendChild(ghost);
-  
-  dragState.ghost = ghost;
+  dragState.ghost = ghostWrapper;
   dragState.started = true;
   document.body.style.userSelect = "none";
   document.body.style.webkitUserSelect = "none";
@@ -1034,7 +1093,7 @@ function onPointerMove(e){
   if(ghost){
     const gx = e.clientX - dragState.offsetX;
     const gy = e.clientY - dragState.offsetY;
-    ghost.style.transform = `translate3d(${gx}px, ${gy}px, 0) rotate(2deg) scale(1.03)`;
+    ghost.style.transform = `translate3d(${gx}px, ${gy}px, 0)`;
   }
 
   // find column under pointer
@@ -1132,6 +1191,7 @@ function onPointerUp(e){
       const sortSel = document.getElementById("sortSelect");
       if(sortSel){
         sortSel.value = "manual";
+        if(sortSel._customSelect) sortSel._customSelect.refresh();
         sortSel.dispatchEvent(new Event("change"));
       }
     }
@@ -1160,6 +1220,22 @@ function onPointerUp(e){
     
     selectedTasks.clear();
     document.querySelectorAll('.card.selected').forEach(c => c.classList.remove('selected'));
+  } else {
+    const taskId = dragState.id;
+    const card = dragState.card;
+    if (dragState.ctrlAtStart) {
+      if (dragState.wasSelected) {
+        selectedTasks.delete(taskId);
+        card.classList.remove('selected');
+      }
+    } else {
+      if (dragState.wasSelected && selectedTasks.size > 1) {
+        selectedTasks.clear();
+        document.querySelectorAll('.card.selected').forEach(c => c.classList.remove('selected'));
+        selectedTasks.add(taskId);
+        card.classList.add('selected');
+      }
+    }
   }
   dragState = null;
 }

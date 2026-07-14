@@ -416,6 +416,19 @@ select.select:focus{ outline:none; border-color:var(--accent-1); }
   animation:none !important;
   will-change:transform;
 }
+.drag-ghost-wrapper {
+  position:fixed; z-index:99999; pointer-events:none !important;
+  width:var(--ghost-w);
+  transition:none !important;
+  animation:none !important;
+  will-change:transform;
+}
+.drag-ghost-item {
+  pointer-events:none !important;
+  margin:0 !important;
+  transition:none !important;
+  animation:none !important;
+}
 
 .card-top{ display:flex; align-items:flex-start; gap:8px; }
 .card-title{
