@@ -3,10 +3,10 @@
 "use strict";
 
 /* ============================================================
-   STORAGE LAYER — multi-profile
+   STORAGE LAYER - multi-profile
    All profiles live together in one master object under MASTER_KEY.
    Each profile is keyed by a lowercased username and holds its own
-   {tasks, settings}. No passwords — picking/creating a username is
+   {tasks, settings}. No passwords - picking/creating a username is
    the entire "login."
    ============================================================ */
 const MASTER_KEY = "momentum_master_v1";
@@ -32,7 +32,8 @@ function defaultUserData(){
       theme: (typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark",
       sort: "manual",
       priorityFilter: "all",
-      statusFilter: "all"
+      statusFilter: "all",
+      tagFilter: "all"
     }
   };
 }
@@ -64,7 +65,7 @@ let masterState = loadMaster() || { users: {} };
 
 let currentUserKey = null;      // normalized (lowercased) profile key
 let currentDisplayName = "";    // as-typed name, used for "Completed By" and UI
-let state = null;               // active profile's {tasks, settings} — null until a profile is chosen
+let state = null;               // active profile's {tasks, settings} - null until a profile is chosen
 
 let saveTimer = null;
 function saveState(){
@@ -78,7 +79,7 @@ function saveState(){
       localStorage.setItem(MASTER_KEY, JSON.stringify(masterState));
     }catch(e){
       console.error("Auto-save failed:", e);
-      showToast("Couldn't save — storage may be full.", "error");
+      showToast("Couldn't save - storage may be full.", "error");
     }
   }, 60);
   scheduleGithubPush();
@@ -90,6 +91,28 @@ function saveState(){
 function uid(){
   return "t" + Date.now().toString(36) + Math.random().toString(36).slice(2,9);
 }
+
+function tagHueClass(str){
+  if(!str) return "tag-hue-0";
+  let hash = 0;
+  for(let i=0; i<str.length; i++){
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return "tag-hue-" + Math.abs(hash % 8);
+}
+
+const PRESET_TAGS = ["Frontend", "Backend", "Bug", "Feature", "Urgent", "Design"];
+function getAllTags(){
+  if(!state || !Array.isArray(state.tasks)) return PRESET_TAGS.slice();
+  const set = new Set(PRESET_TAGS);
+  state.tasks.forEach(t=>{
+    const arr = Array.isArray(t.tags) ? t.tags : (t.tag ? [t.tag] : []);
+    arr.forEach(tag => { if(tag) set.add(String(tag)); });
+  });
+  return Array.from(set).sort();
+}
+
 function nowISO(){ return new Date().toISOString(); }
 
 function fmtDate(iso){
@@ -148,7 +171,7 @@ function showToast(msg, type, actionLabel, actionFn){
 }
 
 /* ============================================================
-   PROFILES — no-password multi-user switching
+   PROFILES - no-password multi-user switching
    ============================================================ */
 function avatarColor(key){
   let hash = 0;
@@ -163,7 +186,7 @@ function renderProfileList(){
   const list = document.getElementById("profileList");
   const keys = Object.keys(masterState.users);
   if(keys.length === 0){
-    list.innerHTML = `<div class="profile-empty">No profiles yet — create the first one below.</div>`;
+    list.innerHTML = `<div class="profile-empty">No profiles yet - create the first one below.</div>`;
     return;
   }
   list.innerHTML = keys.map(k=>{
@@ -204,7 +227,7 @@ function registerProfile(rawName){
   }
   const key = normalizeKey(displayName);
   if(masterState.users[key]){
-    // Someone already registered this name — just sign them in rather than erroring.
+    // Someone already registered this name - just sign them in rather than erroring.
     selectProfile(key);
     return;
   }
@@ -320,7 +343,7 @@ function setSyncStatus(mode, text){
   }
 }
 
-// Per-task-id, last-write-wins merge of two masterState trees — used when a
+// Per-task-id, last-write-wins merge of two masterState trees - used when a
 // push hits a stale-SHA conflict, or on startup when both local and remote
 // data exist and might have diverged.
 function mergeMasterStates(local, remote){
@@ -331,7 +354,7 @@ function mergeMasterStates(local, remote){
     const r = remote.users[key];
     if(l && !r){ merged.users[key] = l; return; }
     if(r && !l){ merged.users[key] = r; return; }
-    // present in both — merge task-by-task on id, newer updatedAt wins
+    // present in both - merge task-by-task on id, newer updatedAt wins
     const taskMap = new Map();
     (r.tasks || []).forEach(t => taskMap.set(t.id, t));
     (l.tasks || []).forEach(t => {
@@ -359,11 +382,11 @@ async function pullFromGitHub(opts){
     });
     if(res.status === 404){
       lastKnownSha = null;
-      if(!opts.silent) setSyncStatus("synced", "No data on GitHub yet — first sync will create it.");
+      if(!opts.silent) setSyncStatus("synced", "No data on GitHub yet - first sync will create it.");
       return;
     }
     if(!res.ok){
-      const msg = res.status === 401 ? "Invalid token." : res.status === 403 ? "Forbidden — check token permissions or rate limit." : `GitHub error (${res.status}).`;
+      const msg = res.status === 401 ? "Invalid token." : res.status === 403 ? "Forbidden - check token permissions or rate limit." : `GitHub error (${res.status}).`;
       setSyncStatus("error", msg);
       if(!opts.silent) showToast("Pull failed: " + msg, "error");
       return;
@@ -389,8 +412,8 @@ async function pullFromGitHub(opts){
     if(!opts.silent) showToast("Pulled latest data from GitHub", "success");
   }catch(e){
     console.error("GitHub pull failed:", e);
-    setSyncStatus("error", "Pull failed — see console for details.");
-    if(!opts.silent) showToast("Pull failed — check your connection and settings.", "error");
+    setSyncStatus("error", "Pull failed - see console for details.");
+    if(!opts.silent) showToast("Pull failed - check your connection and settings.", "error");
   }
 }
 
@@ -407,7 +430,7 @@ async function pushToGitHub(opts, isRetry){
   else setSyncStatus("syncing", "Auto-syncing…");
   try{
     const body = {
-      message: `Update board data — ${new Date().toISOString()}`,
+      message: `Update board data - ${new Date().toISOString()}`,
       content: utf8ToBase64(JSON.stringify(masterState, null, 2)),
       branch: syncConfig.branch || "main"
     };
@@ -420,14 +443,14 @@ async function pushToGitHub(opts, isRetry){
     });
 
     if(res.status === 409 && !isRetry){
-      // stale sha — someone else pushed since our last pull; merge and retry once
+      // stale sha - someone else pushed since our last pull; merge and retry once
       syncInFlight = false;
       await pullFromGitHub({ silent: true });
       await pushToGitHub(opts, true);
       return;
     }
     if(!res.ok){
-      const msg = res.status === 401 ? "Invalid token." : res.status === 403 ? "Forbidden — check token permissions or rate limit." : `GitHub error (${res.status}).`;
+      const msg = res.status === 401 ? "Invalid token." : res.status === 403 ? "Forbidden - check token permissions or rate limit." : `GitHub error (${res.status}).`;
       setSyncStatus("error", msg);
       if(!opts.silent) showToast("Sync failed: " + msg, "error");
       return;
@@ -438,8 +461,8 @@ async function pushToGitHub(opts, isRetry){
     if(!opts.silent) showToast("Synced to GitHub", "success");
   }catch(e){
     console.error("GitHub push failed:", e);
-    setSyncStatus("error", "Sync failed — check your connection.");
-    if(!opts.silent) showToast("Sync failed — check your connection and settings.", "error");
+    setSyncStatus("error", "Sync failed - check your connection.");
+    if(!opts.silent) showToast("Sync failed - check your connection and settings.", "error");
   }finally{
     syncInFlight = false;
   }
@@ -530,9 +553,14 @@ const resultCountEl = document.getElementById("resultCount");
 function getVisibleTasks(){
   const q = searchInput.value.trim().toLowerCase();
   const pf = state.settings.priorityFilter;
+  const tf = state.settings.tagFilter || "all";
   return state.tasks.filter(t=>{
     if(t.archived) return false;
     if(pf !== "all" && t.priority !== pf) return false;
+    if(tf !== "all"){
+      const arr = Array.isArray(t.tags) ? t.tags : (t.tag ? [t.tag] : []);
+      if(!arr.includes(tf)) return false;
+    }
     if(q){
       const hay = (t.title + " " + (t.description||"")).toLowerCase();
       if(!hay.includes(q)) return false;
@@ -599,12 +627,16 @@ function subtaskPanelHTML(t){
 function cardHTML(t){
   const due = dueMeta(t.dueDate);
   const isDone = t.status === "completed";
+  const taskTags = Array.isArray(t.tags) ? t.tags : (t.tag ? [t.tag] : []);
+  const tagsHTML = taskTags.length ? `<div class="card-tags">${taskTags.map(tag => `<span class="tag-chip ${tagHueClass(tag)}" data-filter-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</span>`).join("")}</div>` : "";
+  const accentCls = t.colorAccent && t.colorAccent !== "none" ? ` accent-${t.colorAccent}` : "";
   return `
-  <div class="card priority-${t.priority}${isDone ? " done" : ""}" data-id="${t.id}" tabindex="0" role="group" aria-label="${escapeHtml(t.title)}">
+  <div class="card priority-${t.priority}${accentCls}${isDone ? " done" : ""}" data-id="${t.id}" tabindex="0" role="group" aria-label="${escapeHtml(t.title)}">
     <div class="card-top">
       <div class="card-title">${escapeHtml(t.title)}</div>
       <span class="pri-chip priority-${t.priority}">${t.priority}</span>
     </div>
+    ${tagsHTML}
     ${t.description ? `<div class="card-desc">${escapeHtml(t.description)}</div>` : ""}
     <div class="card-meta">
       ${due ? `<span class="meta-item due-chip ${due.cls}">${escapeHtml(due.label)}</span>` : ""}
@@ -655,6 +687,23 @@ function updateOverallProgress(totalActive){
     : `${doneCount} of ${totalActive} task${totalActive===1?"":"s"} completed`;
 }
 
+function updateTagFilterOptions(){
+  const sel = document.getElementById("tagFilterSelect");
+  if(!sel) return;
+  const current = state.settings.tagFilter || "all";
+  const tags = getAllTags();
+  const newHTML = `<option value="all">All tags</option>` +
+    tags.map(tag => `<option value="${escapeHtml(tag)}" ${tag === current ? "selected" : ""}>${escapeHtml(tag)}</option>`).join("");
+  const htmlChanged = sel.innerHTML !== newHTML;
+  if(htmlChanged){
+    sel.innerHTML = newHTML;
+  }
+  if(sel.value !== current || htmlChanged){
+    sel.value = current;
+    if(sel._customSelect) sel._customSelect.refresh();
+  }
+}
+
 function renderBoard(){
   const visible = getVisibleTasks();
   const q = searchInput.value.trim();
@@ -664,6 +713,7 @@ function renderBoard(){
 
   const totalActive = state.tasks.filter(t=>!t.archived).length;
   updateOverallProgress(totalActive);
+  updateTagFilterOptions();
   const sf = state.settings.statusFilter;
   const columnsToRender = sf === "all" ? COLUMNS : COLUMNS.filter(c=>c.key === sf);
   boardEl.classList.toggle("single-col", sf !== "all");
@@ -693,7 +743,7 @@ function renderBoard(){
     boardEl.appendChild(colEl);
   });
 
-  resultCountEl.textContent = q || state.settings.priorityFilter !== "all"
+  resultCountEl.textContent = q || state.settings.priorityFilter !== "all" || state.settings.tagFilter !== "all"
     ? `${totalShown} task${totalShown===1?"":"s"} shown`
     : `${state.tasks.filter(t=>!t.archived).length} active tasks`;
 
@@ -738,6 +788,15 @@ function attachCardListeners(){
       if(!s) return;
       s.done = cb.checked;
       t.updatedAt = nowISO();
+      saveState();
+      renderBoard();
+    });
+  });
+  document.querySelectorAll(".tag-chip[data-filter-tag]").forEach(chip=>{
+    chip.addEventListener("click", (e)=>{
+      e.stopPropagation();
+      const tag = chip.dataset.filterTag;
+      state.settings.tagFilter = (state.settings.tagFilter === tag) ? "all" : tag;
       saveState();
       renderBoard();
     });
@@ -854,7 +913,7 @@ document.getElementById("confirmOkBtn").addEventListener("click", ()=>{
 });
 
 /* ============================================================
-   DRAG & DROP — pointer-events based (works for mouse + touch)
+   DRAG & DROP - pointer-events based (works for mouse + touch)
    ============================================================ */
 let dragState = null;
 let selectedTasks = new Set();
@@ -872,18 +931,16 @@ function onPointerDown(e){
 
   const card = e.currentTarget;
   const taskId = card.dataset.id;
+  const wasSelected = selectedTasks.has(taskId);
   
   if (e.ctrlKey || e.metaKey) {
-    if (selectedTasks.has(taskId)) {
-      selectedTasks.delete(taskId);
-      card.classList.remove('selected');
-    } else {
+    if (!wasSelected) {
       selectedTasks.add(taskId);
       card.classList.add('selected');
     }
   } else {
     // Only clear if we click an unselected card
-    if (!selectedTasks.has(taskId)) {
+    if (!wasSelected) {
       selectedTasks.clear();
       document.querySelectorAll('.card.selected').forEach(c => c.classList.remove('selected'));
       selectedTasks.add(taskId);
@@ -902,6 +959,8 @@ function onPointerDown(e){
     width: rect.width,
     ghost: null,
     started: false,
+    wasSelected,
+    ctrlAtStart: (e.ctrlKey || e.metaKey),
     fromList: card.closest(".tasklist")
   };
 
@@ -923,36 +982,93 @@ function updateEmptyColumns(){
 function startDrag(){
   const { card, width } = dragState;
   card.classList.add("dragging");
-  
-  // hide other selected cards
+
+  const ghostWrapper = document.createElement("div");
+  ghostWrapper.className = "drag-ghost-wrapper";
+  ghostWrapper.style.setProperty("--ghost-w", width + "px");
+  ghostWrapper.style.position = "fixed";
+  ghostWrapper.style.top = "0";
+  ghostWrapper.style.left = "0";
+  ghostWrapper.style.width = width + "px";
+  ghostWrapper.style.pointerEvents = "none";
+  ghostWrapper.style.zIndex = "99999";
+  ghostWrapper.style.transform = `translate3d(${dragState.startX - dragState.offsetX}px, ${dragState.startY - dragState.offsetY}px, 0)`;
+
+  if (selectedTasks.size > 1) {
+    // Order selected cards so the dragged card is first (top of stack)
+    const otherIds = Array.from(selectedTasks).filter(id => id !== card.dataset.id);
+    const orderedIds = [card.dataset.id, ...otherIds];
+    
+    // Show up to 6 cards in the visual fan deck
+    const stackIds = orderedIds.slice(0, 6);
+    
+    stackIds.forEach((id, idx) => {
+      const el = document.querySelector(`.card[data-id="${id}"]`);
+      if(!el) return;
+      const clone = el.cloneNode(true);
+      clone.style.display = ""; // Ensure cloned card is fully visible!
+      clone.classList.add("drag-ghost-item");
+      clone.classList.remove("dragging", "selected");
+      clone.querySelectorAll(".card-actions").forEach(a=>a.remove());
+      
+      clone.style.position = "absolute";
+      clone.style.width = width + "px";
+      clone.style.transformOrigin = "12% 88%"; // Held pinched at the bottom-left corner!
+
+      if (idx === 0) {
+        clone.style.top = "0px";
+        clone.style.left = "0px";
+        clone.style.zIndex = "100";
+        clone.style.transform = "rotate(-1deg) scale(1.02)";
+        clone.style.boxShadow = "0 24px 50px -12px rgba(0,0,0,0.6)";
+
+        const badge = document.createElement('div');
+        badge.className = 'drag-multi-badge';
+        badge.textContent = '+' + (selectedTasks.size - 1);
+        clone.appendChild(badge);
+      } else {
+        // Playing card fan arc held at bottom-left corner:
+        // cards rotate clockwise around the bottom-left pivot point and spread out to the right
+        const angle = idx * -5; // +11°, +22°, +33°, +44°, +55°...
+        const offsetX = idx * 16; // +16px, +32px, +48px, +64px...
+        const offsetY = idx * 2;  // +2px, +4px, +6px, +8px...
+
+        clone.style.top = `${offsetY}px`;
+        clone.style.left = `${offsetX}px`;
+        clone.style.zIndex = `${100 - idx}`;
+        clone.style.opacity = `${1 - idx * 0.06}`;
+        clone.style.transform = `rotate(${angle}deg) scale(${1 - idx * 0.02})`;
+        clone.style.boxShadow = "0 14px 32px -6px rgba(0,0,0,0.45)";
+        clone.style.border = "1px solid var(--border)";
+      }
+
+      ghostWrapper.appendChild(clone);
+    });
+  } else {
+    const ghost = card.cloneNode(true);
+    ghost.style.display = "";
+    ghost.classList.add("drag-ghost-item");
+    ghost.classList.remove("dragging", "selected");
+    ghost.style.position = "absolute";
+    ghost.style.top = "0px";
+    ghost.style.left = "0px";
+    ghost.style.width = width + "px";
+    ghost.style.zIndex = "100";
+    ghost.style.transformOrigin = "12% 88%";
+    ghost.style.transform = "rotate(2deg) scale(1.03)";
+    ghost.style.boxShadow = "0 24px 50px -12px rgba(0,0,0,0.55)";
+    ghost.querySelectorAll(".card-actions").forEach(a=>a.remove());
+    ghostWrapper.appendChild(ghost);
+  }
+
+  // Hide other selected cards on the board ONLY AFTER cloning them into the ghost fan!
   document.querySelectorAll('.card.selected').forEach(c => {
     if (c !== card) c.style.display = 'none';
   });
 
-  const ghost = card.cloneNode(true);
-  ghost.classList.add("drag-ghost");
-  ghost.classList.remove("dragging");
+  document.body.appendChild(ghostWrapper);
   
-  // If multiple items, add badge
-  if (selectedTasks.size > 1) {
-    const badge = document.createElement('div');
-    badge.className = 'drag-multi-badge';
-    badge.textContent = '+' + (selectedTasks.size - 1);
-    ghost.appendChild(badge);
-  }
-  
-  ghost.style.setProperty("--ghost-w", width + "px");
-  ghost.style.margin = "0";
-  ghost.style.top = "0";
-  ghost.style.left = "0";
-  ghost.style.transition = "none";
-  ghost.style.animation = "none";
-  ghost.style.pointerEvents = "none";
-  ghost.style.transform = `translate3d(${dragState.startX - dragState.offsetX}px, ${dragState.startY - dragState.offsetY}px, 0) rotate(2deg) scale(1.03)`;
-  ghost.querySelectorAll(".card-actions").forEach(a=>a.remove());
-  document.body.appendChild(ghost);
-  
-  dragState.ghost = ghost;
+  dragState.ghost = ghostWrapper;
   dragState.started = true;
   document.body.style.userSelect = "none";
   document.body.style.webkitUserSelect = "none";
@@ -975,7 +1091,7 @@ function onPointerMove(e){
   if(ghost){
     const gx = e.clientX - dragState.offsetX;
     const gy = e.clientY - dragState.offsetY;
-    ghost.style.transform = `translate3d(${gx}px, ${gy}px, 0) rotate(2deg) scale(1.03)`;
+    ghost.style.transform = `translate3d(${gx}px, ${gy}px, 0)`;
   }
 
   // find column under pointer
@@ -1073,6 +1189,7 @@ function onPointerUp(e){
       const sortSel = document.getElementById("sortSelect");
       if(sortSel){
         sortSel.value = "manual";
+        if(sortSel._customSelect) sortSel._customSelect.refresh();
         sortSel.dispatchEvent(new Event("change"));
       }
     }
@@ -1101,6 +1218,22 @@ function onPointerUp(e){
     
     selectedTasks.clear();
     document.querySelectorAll('.card.selected').forEach(c => c.classList.remove('selected'));
+  } else {
+    const taskId = dragState.id;
+    const card = dragState.card;
+    if (dragState.ctrlAtStart) {
+      if (dragState.wasSelected) {
+        selectedTasks.delete(taskId);
+        card.classList.remove('selected');
+      }
+    } else {
+      if (dragState.wasSelected && selectedTasks.size > 1) {
+        selectedTasks.clear();
+        document.querySelectorAll('.card.selected').forEach(c => c.classList.remove('selected'));
+        selectedTasks.add(taskId);
+        card.classList.add('selected');
+      }
+    }
   }
   dragState = null;
 }
@@ -1125,13 +1258,70 @@ priSelect.addEventListener("click", (e)=>{
   [...priSelect.children].forEach(c=>c.classList.toggle("active", c===opt));
 });
 
+const accentSelect = document.getElementById("accentSelect");
+let currentAccent = "none";
+if(accentSelect){
+  accentSelect.addEventListener("click", (e)=>{
+    const opt = e.target.closest(".accent-opt");
+    if(!opt) return;
+    currentAccent = opt.dataset.val;
+    [...accentSelect.children].forEach(c=>c.classList.toggle("active", c === opt));
+  });
+}
+
+/* ---------- Tag editor (inside the Add/Edit modal) ---------- */
+let currentTags = new Set();
+function renderTagEditor(){
+  const list = document.getElementById("tagPillsList");
+  if(!list) return;
+  const all = getAllTags();
+  currentTags.forEach(t => { if(!all.includes(t)) all.push(t); });
+  all.sort();
+
+  list.innerHTML = all.map(tag => {
+    const active = currentTags.has(tag);
+    return `<span class="tag-pill ${tagHueClass(tag)}${active ? " active" : ""}" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</span>`;
+  }).join("");
+
+  list.querySelectorAll(".tag-pill").forEach(pill => {
+    pill.addEventListener("click", ()=>{
+      const tag = pill.dataset.tag;
+      if(currentTags.has(tag)) currentTags.delete(tag); else currentTags.add(tag);
+      renderTagEditor();
+    });
+  });
+}
+
+function addTagFromInput(){
+  const input = document.getElementById("newTagInput");
+  if(!input) return;
+  const text = input.value.trim().slice(0, 30);
+  if(!text) return;
+  currentTags.add(text);
+  input.value = "";
+  renderTagEditor();
+  input.focus();
+}
+
+const addTagBtn = document.getElementById("addTagBtn");
+if(addTagBtn) addTagBtn.addEventListener("click", addTagFromInput);
+const newTagInput = document.getElementById("newTagInput");
+if(newTagInput){
+  newTagInput.addEventListener("keydown", (e)=>{
+    if(e.key === "Enter"){
+      e.preventDefault();
+      addTagFromInput();
+    }
+  });
+}
+
 /* ---------- Subtask editor (inside the Add/Edit modal) ---------- */
 let currentSubtasks = [];
 
 function renderSubtaskEditor(){
   const list = document.getElementById("subtaskList");
   if(currentSubtasks.length === 0){
-    list.innerHTML = `<div class="subtask-empty">No subtasks yet — break this down into smaller steps.</div>`;
+    list.innerHTML = `<div class="subtask-empty">No subtasks yet - break this down into smaller steps.</div>`;
   } else {
     list.innerHTML = currentSubtasks.map(s => `
       <div class="subtask-row" data-id="${s.id}">
@@ -1194,8 +1384,18 @@ function openTaskModal(id, presetStatus){
   descInput.value = t ? (t.description || "") : "";
   dueInput.value = t ? (t.dueDate || "") : "";
   statusInput.value = t ? t.status : (presetStatus || "yettostart");
+  if(statusInput._customSelect) statusInput._customSelect.refresh();
   currentPriority = t ? t.priority : "medium";
   [...priSelect.children].forEach(c=>c.classList.toggle("active", c.dataset.val === currentPriority));
+
+  currentAccent = t && t.colorAccent ? t.colorAccent : "none";
+  if(accentSelect){
+    [...accentSelect.children].forEach(c=>c.classList.toggle("active", c.dataset.val === currentAccent));
+  }
+
+  const taskTags = t ? (Array.isArray(t.tags) ? t.tags : (t.tag ? [t.tag] : [])) : [];
+  currentTags = new Set(taskTags);
+  renderTagEditor();
 
   currentSubtasks = t && Array.isArray(t.subtasks) ? t.subtasks.map(s => ({ ...s })) : [];
   renderSubtaskEditor();
@@ -1205,7 +1405,7 @@ function openTaskModal(id, presetStatus){
     metaReadout.innerHTML = `
       <span>Created: <b>${fmtDateTime(t.createdAt)}</b></span>
       <span>Updated: <b>${fmtDateTime(t.updatedAt)}</b></span>
-      ${t.status==="completed" ? `<span>Completed by: <b>${escapeHtml(t.completedBy||"—")}</b> on <b>${fmtDateTime(t.completedOn)}</b></span>` : ""}
+      ${t.status==="completed" ? `<span>Completed by: <b>${escapeHtml(t.completedBy||"-")}</b> on <b>${fmtDateTime(t.completedOn)}</b></span>` : ""}
     `;
   } else {
     metaReadout.style.display = "none";
@@ -1225,6 +1425,8 @@ taskForm.addEventListener("submit", (e)=>{
     t.title = title;
     t.description = descInput.value.trim();
     t.priority = currentPriority;
+    t.colorAccent = currentAccent;
+    t.tags = Array.from(currentTags);
     t.dueDate = dueInput.value || null;
     t.subtasks = currentSubtasks;
     const newStatus = statusInput.value;
@@ -1241,6 +1443,8 @@ taskForm.addEventListener("submit", (e)=>{
       title,
       description: descInput.value.trim(),
       priority: currentPriority,
+      colorAccent: currentAccent,
+      tags: Array.from(currentTags),
       dueDate: dueInput.value || null,
       status: statusInput.value,
       archived: false,
@@ -1306,7 +1510,7 @@ function renderArchiveModal(){
         <span class="pri-chip priority-${t.priority}">${t.priority}</span>
       </div>
       ${t.description ? `<div class="card-desc">${escapeHtml(t.description)}</div>` : ""}
-      <div class="completion-box">✓ Completed by <b>${escapeHtml(t.completedBy||"—")}</b><br>on ${fmtDateTime(t.completedOn)}</div>
+      <div class="completion-box">✓ Completed by <b>${escapeHtml(t.completedBy||"-")}</b><br>on ${fmtDateTime(t.completedOn)}</div>
       <div class="card-actions" style="opacity:1; transform:none;">
         <button class="restore-btn" data-id="${t.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>Restore</button>
         <button class="delete-btn danger" data-id="${t.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>Delete forever</button>
@@ -1391,7 +1595,7 @@ importFileInput.addEventListener("change", (e)=>{
       showToast(`Imported ${added} task${added===1?"":"s"}${skipped?`, skipped ${skipped}`:""}`, "success");
     }catch(err){
       console.error(err);
-      showToast("Import failed — invalid JSON file.", "error");
+      showToast("Import failed - invalid JSON file.", "error");
     }
     importFileInput.value = "";
   };
@@ -1434,11 +1638,173 @@ document.getElementById("statusFilterSelect").addEventListener("change", (e)=>{
   renderBoard();
 });
 
+const tagFilterSel = document.getElementById("tagFilterSelect");
+if(tagFilterSel){
+  tagFilterSel.addEventListener("change", (e)=>{
+    state.settings.tagFilter = e.target.value;
+    saveState();
+    renderBoard();
+  });
+}
+
 searchInput.addEventListener("input", debounce(()=>renderBoard(), 120));
 
 /* ============================================================
-   NAME PROMPT
+   BOARD INSIGHTS & ANALYTICS DASHBOARD
    ============================================================ */
+function openInsightsModal(){
+  renderInsights();
+  openOverlay("insightsModalOverlay");
+}
+
+function renderInsights(){
+  const body = document.getElementById("insightsBody");
+  if(!body || !state || !state.tasks) return;
+
+  const all = state.tasks.filter(t => !t.archived);
+  const totalActive = all.length;
+  const completed = all.filter(t => t.status === "completed");
+  const inProgress = all.filter(t => t.status === "inprogress");
+  const yetToStart = all.filter(t => t.status === "yettostart");
+
+  const completionRate = totalActive > 0 ? Math.round((completed.length / totalActive) * 100) : 0;
+
+  const todayDate = new Date(); todayDate.setHours(0,0,0,0);
+  const overdueCount = all.filter(t => {
+    if(t.status === "completed" || !t.dueDate) return false;
+    return new Date(t.dueDate + "T00:00:00") < todayDate;
+  }).length;
+
+  const days = [];
+  let maxDayCompleted = 1;
+  for(let i = 6; i >= 0; i--){
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().slice(0, 10);
+    const dayLabel = d.toLocaleDateString(undefined, { weekday: "short" });
+    const isToday = i === 0;
+
+    const count = completed.filter(t => {
+      const cDate = t.completedOn ? t.completedOn.slice(0, 10) : (t.updatedAt ? t.updatedAt.slice(0, 10) : "");
+      return cDate === dateStr;
+    }).length;
+
+    if(count > maxDayCompleted) maxDayCompleted = count;
+    days.push({ dayLabel, count, isToday });
+  }
+
+  const highCt = all.filter(t => t.priority === "high").length;
+  const medCt = all.filter(t => t.priority === "medium").length;
+  const lowCt = all.filter(t => t.priority === "low").length;
+
+  const tagCounts = {};
+  all.forEach(t => {
+    const arr = Array.isArray(t.tags) ? t.tags : (t.tag ? [t.tag] : []);
+    arr.forEach(tag => {
+      if(tag) tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+    });
+  });
+  const topTags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+  body.innerHTML = `
+    <div class="insights-grid">
+      <div class="insights-kpis">
+        <div class="kpi-card">
+          <div class="kpi-val">${totalActive}</div>
+          <div class="kpi-label">Active Tasks</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val">${completed.length}</div>
+          <div class="kpi-label">Completed</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val">${completionRate}%</div>
+          <div class="kpi-label">Completion Rate</div>
+        </div>
+        <div class="kpi-card" ${overdueCount > 0 ? 'style="border-color:var(--high);"' : ''}>
+          <div class="kpi-val" ${overdueCount > 0 ? 'style="color:var(--high);"' : ''}>${overdueCount}</div>
+          <div class="kpi-label">Overdue Tasks</div>
+        </div>
+      </div>
+
+      <div class="insights-panel">
+        <h3>7-Day Completion Velocity <span>Tasks finished per day</span></h3>
+        <div class="velocity-chart">
+          ${days.map(d => {
+            const pct = Math.round((d.count / maxDayCompleted) * 100);
+            return `
+              <div class="velocity-col">
+                <span class="velocity-count">${d.count || ''}</span>
+                <div class="velocity-bar-track">
+                  <div class="velocity-bar-fill${d.isToday ? " today" : ""}" style="height:${Math.max(pct, d.count > 0 ? 12 : 0)}%;"></div>
+                </div>
+                <span class="velocity-day" ${d.isToday ? 'style="color:var(--text-0); font-weight:800;"' : ''}>${d.isToday ? "Today" : d.dayLabel}</span>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      </div>
+
+      <div class="insights-row">
+        <div class="insights-panel">
+          <h3>Status Breakdown <span>Distribution across columns</span></h3>
+          <div class="breakdown-list">
+            <div class="breakdown-item">
+              <div class="breakdown-head"><span>Yet to start</span><b>${yetToStart.length} (${totalActive ? Math.round((yetToStart.length/totalActive)*100) : 0}%)</b></div>
+              <div class="breakdown-track"><div class="breakdown-fill yettostart" style="width:${totalActive ? Math.round((yetToStart.length/totalActive)*100) : 0}%"></div></div>
+            </div>
+            <div class="breakdown-item">
+              <div class="breakdown-head"><span>In progress</span><b>${inProgress.length} (${totalActive ? Math.round((inProgress.length/totalActive)*100) : 0}%)</b></div>
+              <div class="breakdown-track"><div class="breakdown-fill inprogress" style="width:${totalActive ? Math.round((inProgress.length/totalActive)*100) : 0}%"></div></div>
+            </div>
+            <div class="breakdown-item">
+              <div class="breakdown-head"><span>Completed</span><b>${completed.length} (${completionRate}%)</b></div>
+              <div class="breakdown-track"><div class="breakdown-fill completed" style="width:${completionRate}%"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="insights-panel">
+          <h3>Priority Distribution <span>High / Medium / Low</span></h3>
+          <div class="breakdown-list">
+            <div class="breakdown-item">
+              <div class="breakdown-head"><span>High Priority</span><b>${highCt} (${totalActive ? Math.round((highCt/totalActive)*100) : 0}%)</b></div>
+              <div class="breakdown-track"><div class="breakdown-fill high" style="width:${totalActive ? Math.round((highCt/totalActive)*100) : 0}%"></div></div>
+            </div>
+            <div class="breakdown-item">
+              <div class="breakdown-head"><span>Medium Priority</span><b>${medCt} (${totalActive ? Math.round((medCt/totalActive)*100) : 0}%)</b></div>
+              <div class="breakdown-track"><div class="breakdown-fill medium" style="width:${totalActive ? Math.round((medCt/totalActive)*100) : 0}%"></div></div>
+            </div>
+            <div class="breakdown-item">
+              <div class="breakdown-head"><span>Low Priority</span><b>${lowCt} (${totalActive ? Math.round((lowCt/totalActive)*100) : 0}%)</b></div>
+              <div class="breakdown-track"><div class="breakdown-fill low" style="width:${totalActive ? Math.round((lowCt/totalActive)*100) : 0}%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      ${topTags.length ? `
+      <div class="insights-panel">
+        <h3>Most Active Tags / Labels <span>Top tags used on active tasks</span></h3>
+        <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:4px;">
+          ${topTags.map(([tag, count]) => `
+            <div style="background:var(--bg-1); border:1px solid var(--border); border-radius:var(--radius-md); padding:8px 14px; display:flex; align-items:center; gap:8px;">
+              <span class="tag-chip ${tagHueClass(tag)}">${escapeHtml(tag)}</span>
+              <span style="font-size:13px; font-weight:700; color:var(--text-1);">${count} task${count===1 ? '' : 's'}</span>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+      ` : ""}
+    </div>
+  `;
+}
+
+const insightsBtn = document.getElementById("insightsBtn");
+if(insightsBtn) insightsBtn.addEventListener("click", openInsightsModal);
+const insightsModalClose = document.getElementById("insightsModalClose");
+if(insightsModalClose) insightsModalClose.addEventListener("click", ()=>closeOverlay("insightsModalOverlay"));
+
 /* ============================================================
    SHORTCUTS
    ============================================================ */
@@ -1446,7 +1812,7 @@ document.getElementById("shortcutsBtn").addEventListener("click", ()=>openOverla
 document.getElementById("shortcutsModalClose").addEventListener("click", ()=>closeOverlay("shortcutsModalOverlay"));
 
 window.addEventListener("keydown", (e)=>{
-  if(!state) return; // no profile chosen yet — board shortcuts don't apply
+  if(!state) return; // no profile chosen yet - board shortcuts don't apply
   const tag = (e.target.tagName || "").toLowerCase();
   const typing = tag === "input" || tag === "textarea" || e.target.isContentEditable;
 
@@ -1502,8 +1868,12 @@ function seedIfEmpty(){
 }
 
 function syncToolbarToSettings(){
-  document.getElementById("sortSelect").value = state.settings.sort;
-  document.getElementById("statusFilterSelect").value = state.settings.statusFilter;
+  const sortSel = document.getElementById("sortSelect");
+  if(sortSel){ sortSel.value = state.settings.sort; if(sortSel._customSelect) sortSel._customSelect.refresh(); }
+  const statusSel = document.getElementById("statusFilterSelect");
+  if(statusSel){ statusSel.value = state.settings.statusFilter; if(statusSel._customSelect) statusSel._customSelect.refresh(); }
+  const tagSel = document.getElementById("tagFilterSelect");
+  if(tagSel){ tagSel.value = state.settings.tagFilter || "all"; if(tagSel._customSelect) tagSel._customSelect.refresh(); }
   document.querySelectorAll("#priorityFilterSeg button").forEach(b=>{
     b.classList.toggle("active", b.dataset.val === state.settings.priorityFilter);
   });

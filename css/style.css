@@ -1,6 +1,6 @@
 
 /* ============================================================
-   MOMENTUM — Design tokens
+   MOMENTUM - Design tokens
    A quiet, premium productivity surface. Deep indigo/violet
    system on dark, soft neutral on light. Priority is the only
    place color gets loud.
@@ -416,6 +416,19 @@ select.select:focus{ outline:none; border-color:var(--accent-1); }
   animation:none !important;
   will-change:transform;
 }
+.drag-ghost-wrapper {
+  position:fixed; z-index:99999; pointer-events:none !important;
+  width:var(--ghost-w);
+  transition:none !important;
+  animation:none !important;
+  will-change:transform;
+}
+.drag-ghost-item {
+  pointer-events:none !important;
+  margin:0 !important;
+  transition:none !important;
+  animation:none !important;
+}
 
 .card-top{ display:flex; align-items:flex-start; gap:8px; }
 .card-title{
@@ -576,7 +589,7 @@ select.select:focus{ outline:none; border-color:var(--accent-1); }
 }
 .meta-readout b{ color:var(--text-1); font-family:var(--font-body); font-weight:700; }
 
-/* ============ Subtasks — modal editor ============ */
+/* ============ Subtasks - modal editor ============ */
 .subtask-editor{
   border:1px solid var(--border); border-radius:10px; padding:10px;
   background:var(--bg-2);
@@ -611,7 +624,7 @@ select.select:focus{ outline:none; border-color:var(--accent-1); }
 .subtask-add-row input:focus{ border-color:var(--accent-1); box-shadow:0 0 0 3px rgba(109,93,246,.16); }
 .subtask-add-row .btn{ padding:8px 13px; font-size:12px; flex:none; }
 
-/* ============ Subtasks — on-card checklist ============ */
+/* ============ Subtasks - on-card checklist ============ */
 .subtask-panel{ margin-top:10px; }
 .subtask-summary{
   display:flex; align-items:center; gap:6px; width:100%;
@@ -752,4 +765,182 @@ select.select:focus{ outline:none; border-color:var(--accent-1); }
   .board-scroll{ padding:14px; }
   .kbd-hint{ display:none; }
 }
+
+/* ============================================================
+   TAGS / LABELS SYSTEM
+   ============================================================ */
+.tag-editor{
+  display:flex; flex-direction:column; gap:8px;
+  background:var(--bg-2); border:1px solid var(--border);
+  border-radius:var(--radius-md); padding:10px 12px;
+}
+.tag-pills-list{
+  display:flex; flex-wrap:wrap; gap:6px; min-height:26px; align-items:center;
+}
+.tag-pill{
+  display:inline-flex; align-items:center; gap:5px;
+  padding:3px 9px; border-radius:99px; font-size:11px; font-weight:700;
+  cursor:pointer; border:1px solid transparent; transition:all var(--dur-fast);
+  user-select:none;
+}
+.tag-pill:not(.active){
+  background:var(--bg-1); color:var(--text-2); border-color:var(--border); opacity:0.65;
+}
+.tag-pill:not(.active):hover{ opacity:1; border-color:var(--text-1); }
+.tag-pill.active{
+  box-shadow:0 2px 8px -2px currentColor; transform:scale(1.03);
+}
+.tag-add-row{
+  display:flex; gap:6px; align-items:center;
+}
+.tag-add-row input{
+  flex:1; font-size:12px; padding:6px 10px; background:var(--bg-1);
+}
+.tag-add-row button{
+  padding:5px 12px; font-size:11.5px;
+}
+
+/* Card tag chips */
+.card-tags{
+  display:flex; flex-wrap:wrap; gap:4px 6px; margin-top:8px;
+}
+.tag-chip{
+  display:inline-flex; align-items:center; padding:2px 7.5px; border-radius:6px;
+  font-size:10.5px; font-weight:700; letter-spacing:0.02em; cursor:pointer;
+  transition:transform var(--dur-fast), filter var(--dur-fast);
+}
+.tag-chip:hover{
+  transform:translateY(-1px) scale(1.04); filter:brightness(1.15);
+}
+
+/* Tag Color Palettes (Hue buckets 0-7) */
+.tag-hue-0{ background:hsla(190,85%,50%,0.15); color:hsl(190,95%,65%); border:1px solid hsla(190,85%,50%,0.3); }
+.tag-hue-1{ background:hsla(270,85%,60%,0.15); color:hsl(270,95%,75%); border:1px solid hsla(270,85%,60%,0.3); }
+.tag-hue-2{ background:hsla(150,80%,45%,0.15); color:hsl(150,90%,60%); border:1px solid hsla(150,80%,45%,0.3); }
+.tag-hue-3{ background:hsla(340,85%,55%,0.15); color:hsl(340,95%,70%); border:1px solid hsla(340,85%,55%,0.3); }
+.tag-hue-4{ background:hsla(35,90%,50%,0.15); color:hsl(35,95%,65%); border:1px solid hsla(35,90%,50%,0.3); }
+.tag-hue-5{ background:hsla(215,90%,55%,0.15); color:hsl(215,95%,72%); border:1px solid hsla(215,90%,55%,0.3); }
+.tag-hue-6{ background:hsla(10,85%,55%,0.15); color:hsl(10,95%,68%); border:1px solid hsla(10,85%,55%,0.3); }
+.tag-hue-7{ background:hsla(80,80%,45%,0.15); color:hsl(80,90%,60%); border:1px solid hsla(80,80%,45%,0.3); }
+
+[data-theme="light"] .tag-hue-0{ background:hsla(190,85%,45%,0.14); color:hsl(190,90%,32%); }
+[data-theme="light"] .tag-hue-1{ background:hsla(270,85%,55%,0.14); color:hsl(270,90%,38%); }
+[data-theme="light"] .tag-hue-2{ background:hsla(150,80%,40%,0.14); color:hsl(150,90%,28%); }
+[data-theme="light"] .tag-hue-3{ background:hsla(340,85%,50%,0.14); color:hsl(340,90%,36%); }
+[data-theme="light"] .tag-hue-4{ background:hsla(35,90%,45%,0.16); color:hsl(32,95%,32%); }
+[data-theme="light"] .tag-hue-5{ background:hsla(215,90%,50%,0.14); color:hsl(215,90%,36%); }
+[data-theme="light"] .tag-hue-6{ background:hsla(10,85%,50%,0.14); color:hsl(10,90%,36%); }
+[data-theme="light"] .tag-hue-7{ background:hsla(80,80%,38%,0.15); color:hsl(80,90%,26%); }
+
+/* ============================================================
+   CARD COVER ACCENTS & COLOR HIGHLIGHTS
+   ============================================================ */
+.accent-select{
+  display:flex; gap:8px; align-items:center; height:36px;
+}
+.accent-opt{
+  width:24px; height:24px; border-radius:50%; cursor:pointer;
+  border:2px solid transparent; transition:transform var(--dur-fast), box-shadow var(--dur-fast);
+  position:relative;
+}
+.accent-opt:hover{ transform:scale(1.15); }
+.accent-opt.active{ transform:scale(1.22); box-shadow:0 0 0 2px var(--text-0), 0 4px 10px rgba(0,0,0,0.3); }
+
+.accent-opt.none{ background:var(--bg-2); border-color:var(--border); }
+.accent-opt.none::after{ content:"×"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:14px; color:var(--text-2); font-weight:700; line-height:1; }
+.accent-opt.emerald{ background:#10B981; }
+.accent-opt.cyan{ background:#06B6D4; }
+.accent-opt.purple{ background:#A855F7; }
+.accent-opt.amber{ background:#F59E0B; }
+.accent-opt.rose{ background:#F43F5E; }
+.accent-opt.blue{ background:#3B82F6; }
+
+/* Applied accent classes on .card */
+.card.accent-emerald{ border-top:3.5px solid #10B981; background:linear-gradient(180deg, rgba(16,185,129,0.06), var(--bg-1) 32px); }
+.card.accent-cyan{ border-top:3.5px solid #06B6D4; background:linear-gradient(180deg, rgba(6,182,212,0.06), var(--bg-1) 32px); }
+.card.accent-purple{ border-top:3.5px solid #A855F7; background:linear-gradient(180deg, rgba(168,85,247,0.06), var(--bg-1) 32px); }
+.card.accent-amber{ border-top:3.5px solid #F59E0B; background:linear-gradient(180deg, rgba(245,158,11,0.06), var(--bg-1) 32px); }
+.card.accent-rose{ border-top:3.5px solid #F43F5E; background:linear-gradient(180deg, rgba(244,63,94,0.06), var(--bg-1) 32px); }
+.card.accent-blue{ border-top:3.5px solid #3B82F6; background:linear-gradient(180deg, rgba(59,130,246,0.06), var(--bg-1) 32px); }
+
+/* ============================================================
+   INSIGHTS & ANALYTICS DASHBOARD
+   ============================================================ */
+.insights-grid{
+  display:flex; flex-direction:column; gap:20px;
+}
+.insights-kpis{
+  display:grid; grid-template-columns:repeat(auto-fit, minmax(135px, 1fr)); gap:12px;
+}
+.kpi-card{
+  background:var(--bg-2); border:1px solid var(--border); border-radius:var(--radius-lg);
+  padding:14px 16px; display:flex; flex-direction:column; gap:4px;
+}
+.kpi-val{
+  font-size:26px; font-weight:800; font-family:var(--font-display); color:var(--text-0);
+  line-height:1.1;
+}
+.kpi-label{
+  font-size:11.5px; color:var(--text-2); font-weight:600;
+}
+.insights-row{
+  display:grid; grid-template-columns:1fr 1fr; gap:16px;
+}
+@media (max-width:680px){
+  .insights-row{ grid-template-columns:1fr; }
+}
+.insights-panel{
+  background:var(--bg-2); border:1px solid var(--border); border-radius:var(--radius-lg);
+  padding:18px; display:flex; flex-direction:column; gap:14px;
+}
+.insights-panel h3{
+  font-size:14px; font-weight:700; color:var(--text-0); margin:0; display:flex; align-items:center; justify-content:space-between;
+}
+.insights-panel h3 span{ font-size:11.5px; font-weight:500; color:var(--text-2); }
+
+/* 7-Day Velocity Chart */
+.velocity-chart{
+  display:flex; align-items:flex-end; justify-content:space-between; gap:10px; height:130px;
+  padding-top:16px;
+}
+.velocity-col{
+  flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end;
+}
+.velocity-bar-track{
+  width:100%; max-width:32px; flex:1; background:var(--bg-1); border-radius:6px;
+  display:flex; align-items:flex-end; overflow:hidden; border:1px solid var(--border);
+}
+.velocity-bar-fill{
+  width:100%; background:var(--accent-1); border-radius:4px 4px 0 0;
+  transition:height var(--dur-med) var(--ease);
+}
+.velocity-bar-fill.today{ background:linear-gradient(180deg, var(--med), #3B82F6); }
+.velocity-count{ font-size:11px; font-weight:700; color:var(--text-1); font-family:var(--font-mono); }
+.velocity-day{ font-size:10.5px; font-weight:600; color:var(--text-2); text-transform:uppercase; }
+
+/* Breakdown Progress Bars */
+.breakdown-list{
+  display:flex; flex-direction:column; gap:12px;
+}
+.breakdown-item{
+  display:flex; flex-direction:column; gap:5px;
+}
+.breakdown-head{
+  display:flex; justify-content:space-between; font-size:12px; font-weight:600; color:var(--text-1);
+}
+.breakdown-head b{ color:var(--text-0); font-family:var(--font-mono); }
+.breakdown-track{
+  height:8px; background:var(--bg-1); border-radius:99px; overflow:hidden; border:1px solid var(--border);
+}
+.breakdown-fill{
+  height:100%; border-radius:99px; transition:width var(--dur-med) var(--ease);
+}
+.breakdown-fill.yettostart{ background:#94A3B8; }
+.breakdown-fill.inprogress{ background:#3B82F6; }
+.breakdown-fill.completed{ background:#10B981; }
+
+.breakdown-fill.low{ background:var(--low); }
+.breakdown-fill.medium{ background:var(--med); }
+.breakdown-fill.high{ background:var(--high); }
+
 
