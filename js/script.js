@@ -3,10 +3,10 @@
 "use strict";
 
 /* ============================================================
-   STORAGE LAYER — multi-profile
+   STORAGE LAYER - multi-profile
    All profiles live together in one master object under MASTER_KEY.
    Each profile is keyed by a lowercased username and holds its own
-   {tasks, settings}. No passwords — picking/creating a username is
+   {tasks, settings}. No passwords - picking/creating a username is
    the entire "login."
    ============================================================ */
 const MASTER_KEY = "momentum_master_v1";
@@ -65,7 +65,7 @@ let masterState = loadMaster() || { users: {} };
 
 let currentUserKey = null;      // normalized (lowercased) profile key
 let currentDisplayName = "";    // as-typed name, used for "Completed By" and UI
-let state = null;               // active profile's {tasks, settings} — null until a profile is chosen
+let state = null;               // active profile's {tasks, settings} - null until a profile is chosen
 
 let saveTimer = null;
 function saveState(){
@@ -79,7 +79,7 @@ function saveState(){
       localStorage.setItem(MASTER_KEY, JSON.stringify(masterState));
     }catch(e){
       console.error("Auto-save failed:", e);
-      showToast("Couldn't save — storage may be full.", "error");
+      showToast("Couldn't save - storage may be full.", "error");
     }
   }, 60);
   scheduleGithubPush();
@@ -171,7 +171,7 @@ function showToast(msg, type, actionLabel, actionFn){
 }
 
 /* ============================================================
-   PROFILES — no-password multi-user switching
+   PROFILES - no-password multi-user switching
    ============================================================ */
 function avatarColor(key){
   let hash = 0;
@@ -186,7 +186,7 @@ function renderProfileList(){
   const list = document.getElementById("profileList");
   const keys = Object.keys(masterState.users);
   if(keys.length === 0){
-    list.innerHTML = `<div class="profile-empty">No profiles yet — create the first one below.</div>`;
+    list.innerHTML = `<div class="profile-empty">No profiles yet - create the first one below.</div>`;
     return;
   }
   list.innerHTML = keys.map(k=>{
@@ -227,7 +227,7 @@ function registerProfile(rawName){
   }
   const key = normalizeKey(displayName);
   if(masterState.users[key]){
-    // Someone already registered this name — just sign them in rather than erroring.
+    // Someone already registered this name - just sign them in rather than erroring.
     selectProfile(key);
     return;
   }
@@ -343,7 +343,7 @@ function setSyncStatus(mode, text){
   }
 }
 
-// Per-task-id, last-write-wins merge of two masterState trees — used when a
+// Per-task-id, last-write-wins merge of two masterState trees - used when a
 // push hits a stale-SHA conflict, or on startup when both local and remote
 // data exist and might have diverged.
 function mergeMasterStates(local, remote){
@@ -354,7 +354,7 @@ function mergeMasterStates(local, remote){
     const r = remote.users[key];
     if(l && !r){ merged.users[key] = l; return; }
     if(r && !l){ merged.users[key] = r; return; }
-    // present in both — merge task-by-task on id, newer updatedAt wins
+    // present in both - merge task-by-task on id, newer updatedAt wins
     const taskMap = new Map();
     (r.tasks || []).forEach(t => taskMap.set(t.id, t));
     (l.tasks || []).forEach(t => {
@@ -382,11 +382,11 @@ async function pullFromGitHub(opts){
     });
     if(res.status === 404){
       lastKnownSha = null;
-      if(!opts.silent) setSyncStatus("synced", "No data on GitHub yet — first sync will create it.");
+      if(!opts.silent) setSyncStatus("synced", "No data on GitHub yet - first sync will create it.");
       return;
     }
     if(!res.ok){
-      const msg = res.status === 401 ? "Invalid token." : res.status === 403 ? "Forbidden — check token permissions or rate limit." : `GitHub error (${res.status}).`;
+      const msg = res.status === 401 ? "Invalid token." : res.status === 403 ? "Forbidden - check token permissions or rate limit." : `GitHub error (${res.status}).`;
       setSyncStatus("error", msg);
       if(!opts.silent) showToast("Pull failed: " + msg, "error");
       return;
@@ -412,8 +412,8 @@ async function pullFromGitHub(opts){
     if(!opts.silent) showToast("Pulled latest data from GitHub", "success");
   }catch(e){
     console.error("GitHub pull failed:", e);
-    setSyncStatus("error", "Pull failed — see console for details.");
-    if(!opts.silent) showToast("Pull failed — check your connection and settings.", "error");
+    setSyncStatus("error", "Pull failed - see console for details.");
+    if(!opts.silent) showToast("Pull failed - check your connection and settings.", "error");
   }
 }
 
@@ -430,7 +430,7 @@ async function pushToGitHub(opts, isRetry){
   else setSyncStatus("syncing", "Auto-syncing…");
   try{
     const body = {
-      message: `Update board data — ${new Date().toISOString()}`,
+      message: `Update board data - ${new Date().toISOString()}`,
       content: utf8ToBase64(JSON.stringify(masterState, null, 2)),
       branch: syncConfig.branch || "main"
     };
@@ -443,14 +443,14 @@ async function pushToGitHub(opts, isRetry){
     });
 
     if(res.status === 409 && !isRetry){
-      // stale sha — someone else pushed since our last pull; merge and retry once
+      // stale sha - someone else pushed since our last pull; merge and retry once
       syncInFlight = false;
       await pullFromGitHub({ silent: true });
       await pushToGitHub(opts, true);
       return;
     }
     if(!res.ok){
-      const msg = res.status === 401 ? "Invalid token." : res.status === 403 ? "Forbidden — check token permissions or rate limit." : `GitHub error (${res.status}).`;
+      const msg = res.status === 401 ? "Invalid token." : res.status === 403 ? "Forbidden - check token permissions or rate limit." : `GitHub error (${res.status}).`;
       setSyncStatus("error", msg);
       if(!opts.silent) showToast("Sync failed: " + msg, "error");
       return;
@@ -461,8 +461,8 @@ async function pushToGitHub(opts, isRetry){
     if(!opts.silent) showToast("Synced to GitHub", "success");
   }catch(e){
     console.error("GitHub push failed:", e);
-    setSyncStatus("error", "Sync failed — check your connection.");
-    if(!opts.silent) showToast("Sync failed — check your connection and settings.", "error");
+    setSyncStatus("error", "Sync failed - check your connection.");
+    if(!opts.silent) showToast("Sync failed - check your connection and settings.", "error");
   }finally{
     syncInFlight = false;
   }
@@ -913,7 +913,7 @@ document.getElementById("confirmOkBtn").addEventListener("click", ()=>{
 });
 
 /* ============================================================
-   DRAG & DROP — pointer-events based (works for mouse + touch)
+   DRAG & DROP - pointer-events based (works for mouse + touch)
    ============================================================ */
 let dragState = null;
 let selectedTasks = new Set();
@@ -1321,7 +1321,7 @@ let currentSubtasks = [];
 function renderSubtaskEditor(){
   const list = document.getElementById("subtaskList");
   if(currentSubtasks.length === 0){
-    list.innerHTML = `<div class="subtask-empty">No subtasks yet — break this down into smaller steps.</div>`;
+    list.innerHTML = `<div class="subtask-empty">No subtasks yet - break this down into smaller steps.</div>`;
   } else {
     list.innerHTML = currentSubtasks.map(s => `
       <div class="subtask-row" data-id="${s.id}">
@@ -1405,7 +1405,7 @@ function openTaskModal(id, presetStatus){
     metaReadout.innerHTML = `
       <span>Created: <b>${fmtDateTime(t.createdAt)}</b></span>
       <span>Updated: <b>${fmtDateTime(t.updatedAt)}</b></span>
-      ${t.status==="completed" ? `<span>Completed by: <b>${escapeHtml(t.completedBy||"—")}</b> on <b>${fmtDateTime(t.completedOn)}</b></span>` : ""}
+      ${t.status==="completed" ? `<span>Completed by: <b>${escapeHtml(t.completedBy||"-")}</b> on <b>${fmtDateTime(t.completedOn)}</b></span>` : ""}
     `;
   } else {
     metaReadout.style.display = "none";
@@ -1510,7 +1510,7 @@ function renderArchiveModal(){
         <span class="pri-chip priority-${t.priority}">${t.priority}</span>
       </div>
       ${t.description ? `<div class="card-desc">${escapeHtml(t.description)}</div>` : ""}
-      <div class="completion-box">✓ Completed by <b>${escapeHtml(t.completedBy||"—")}</b><br>on ${fmtDateTime(t.completedOn)}</div>
+      <div class="completion-box">✓ Completed by <b>${escapeHtml(t.completedBy||"-")}</b><br>on ${fmtDateTime(t.completedOn)}</div>
       <div class="card-actions" style="opacity:1; transform:none;">
         <button class="restore-btn" data-id="${t.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>Restore</button>
         <button class="delete-btn danger" data-id="${t.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>Delete forever</button>
@@ -1595,7 +1595,7 @@ importFileInput.addEventListener("change", (e)=>{
       showToast(`Imported ${added} task${added===1?"":"s"}${skipped?`, skipped ${skipped}`:""}`, "success");
     }catch(err){
       console.error(err);
-      showToast("Import failed — invalid JSON file.", "error");
+      showToast("Import failed - invalid JSON file.", "error");
     }
     importFileInput.value = "";
   };
@@ -1812,7 +1812,7 @@ document.getElementById("shortcutsBtn").addEventListener("click", ()=>openOverla
 document.getElementById("shortcutsModalClose").addEventListener("click", ()=>closeOverlay("shortcutsModalOverlay"));
 
 window.addEventListener("keydown", (e)=>{
-  if(!state) return; // no profile chosen yet — board shortcuts don't apply
+  if(!state) return; // no profile chosen yet - board shortcuts don't apply
   const tag = (e.target.tagName || "").toLowerCase();
   const typing = tag === "input" || tag === "textarea" || e.target.isContentEditable;
 

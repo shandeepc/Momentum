@@ -1,6 +1,6 @@
 
 /* ============================================================
-   MOMENTUM — Design tokens
+   MOMENTUM - Design tokens
    A quiet, premium productivity surface. Deep indigo/violet
    system on dark, soft neutral on light. Priority is the only
    place color gets loud.
@@ -589,7 +589,7 @@ select.select:focus{ outline:none; border-color:var(--accent-1); }
 }
 .meta-readout b{ color:var(--text-1); font-family:var(--font-body); font-weight:700; }
 
-/* ============ Subtasks — modal editor ============ */
+/* ============ Subtasks - modal editor ============ */
 .subtask-editor{
   border:1px solid var(--border); border-radius:10px; padding:10px;
   background:var(--bg-2);
@@ -624,7 +624,7 @@ select.select:focus{ outline:none; border-color:var(--accent-1); }
 .subtask-add-row input:focus{ border-color:var(--accent-1); box-shadow:0 0 0 3px rgba(109,93,246,.16); }
 .subtask-add-row .btn{ padding:8px 13px; font-size:12px; flex:none; }
 
-/* ============ Subtasks — on-card checklist ============ */
+/* ============ Subtasks - on-card checklist ============ */
 .subtask-panel{ margin-top:10px; }
 .subtask-summary{
   display:flex; align-items:center; gap:6px; width:100%;
