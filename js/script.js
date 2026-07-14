@@ -1013,13 +1013,13 @@ function startDrag(){
       
       clone.style.position = "absolute";
       clone.style.width = width + "px";
-      clone.style.transformOrigin = "50% 90%";
+      clone.style.transformOrigin = "12% 88%"; // Held pinched at the bottom-left corner!
 
       if (idx === 0) {
         clone.style.top = "0px";
         clone.style.left = "0px";
         clone.style.zIndex = "100";
-        clone.style.transform = "rotate(0deg) scale(1.02)";
+        clone.style.transform = "rotate(-1deg) scale(1.02)";
         clone.style.boxShadow = "0 24px 50px -12px rgba(0,0,0,0.6)";
 
         const badge = document.createElement('div');
@@ -1027,19 +1027,17 @@ function startDrag(){
         badge.textContent = '+' + (selectedTasks.size - 1);
         clone.appendChild(badge);
       } else {
-        // Symmetrical playing card fan arc around the center grabbed card:
-        // odd idx swings right (+), even idx swings left (-)
-        const step = Math.floor((idx + 1) / 2);
-        const sign = (idx % 2 !== 0) ? 1 : -1;
-        const angle = sign * step * 14; // +14°, -14°, +28°, -28°...
-        const offsetX = sign * step * 38; // +38px, -38px, +76px, -76px...
-        const offsetY = step * step * 4;  // +4px, +4px, +16px, +16px...
+        // Playing card fan arc held at bottom-left corner:
+        // cards rotate clockwise around the bottom-left pivot point and spread out to the right
+        const angle = idx * -5; // +11°, +22°, +33°, +44°, +55°...
+        const offsetX = idx * 16; // +16px, +32px, +48px, +64px...
+        const offsetY = idx * 2;  // +2px, +4px, +6px, +8px...
 
         clone.style.top = `${offsetY}px`;
         clone.style.left = `${offsetX}px`;
         clone.style.zIndex = `${100 - idx}`;
-        clone.style.opacity = `${1 - step * 0.05}`;
-        clone.style.transform = `rotate(${angle}deg) scale(${1 - step * 0.02})`;
+        clone.style.opacity = `${1 - idx * 0.06}`;
+        clone.style.transform = `rotate(${angle}deg) scale(${1 - idx * 0.02})`;
         clone.style.boxShadow = "0 14px 32px -6px rgba(0,0,0,0.45)";
         clone.style.border = "1px solid var(--border)";
       }
@@ -1056,7 +1054,7 @@ function startDrag(){
     ghost.style.left = "0px";
     ghost.style.width = width + "px";
     ghost.style.zIndex = "100";
-    ghost.style.transformOrigin = "50% 90%";
+    ghost.style.transformOrigin = "12% 88%";
     ghost.style.transform = "rotate(2deg) scale(1.03)";
     ghost.style.boxShadow = "0 24px 50px -12px rgba(0,0,0,0.55)";
     ghost.querySelectorAll(".card-actions").forEach(a=>a.remove());
