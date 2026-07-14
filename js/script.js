@@ -518,7 +518,7 @@ document.getElementById("ghDisconnectBtn").addEventListener("click", ()=>{
    RENDER: BOARD
    ============================================================ */
 const COLUMNS = [
-  { key:"daily", label:"Daily", dot:"daily" },
+  { key:"yettostart", label:"Yet To Start", dot:"yettostart" },
   { key:"inprogress", label:"In Progress", dot:"inprogress" },
   { key:"completed", label:"Completed", dot:"completed" }
 ];
@@ -1193,7 +1193,7 @@ function openTaskModal(id, presetStatus){
   titleInput.value = t ? t.title : "";
   descInput.value = t ? (t.description || "") : "";
   dueInput.value = t ? (t.dueDate || "") : "";
-  statusInput.value = t ? t.status : (presetStatus || "daily");
+  statusInput.value = t ? t.status : (presetStatus || "yettostart");
   currentPriority = t ? t.priority : "medium";
   [...priSelect.children].forEach(c=>c.classList.toggle("active", c.dataset.val === currentPriority));
 
@@ -1369,7 +1369,7 @@ importFileInput.addEventListener("change", (e)=>{
           description: raw.description ? String(raw.description).slice(0,1000) : "",
           priority: ["low","medium","high"].includes(raw.priority) ? raw.priority : "medium",
           dueDate: raw.dueDate || null,
-          status: ["daily","inprogress","completed"].includes(raw.status) ? raw.status : "daily",
+          status: ["yettostart","inprogress","completed"].includes(raw.status) ? raw.status : "yettostart",
           archived: !!raw.archived,
           order: typeof raw.order === "number" ? raw.order : (importBase + (importOffset++)),
           subtasks: Array.isArray(raw.subtasks)
@@ -1473,12 +1473,12 @@ function seedIfEmpty(){
   state.tasks = [
     {
       id: uid(), title:"Welcome to Momentum 👋", description:"This board saves everything locally in your browser. Try dragging this card to another column.",
-      priority:"medium", dueDate:null, status:"daily", archived:false, order: t0 - 400000,
+      priority:"medium", dueDate:null, status:"yettostart", archived:false, order: t0 - 400000,
       createdAt: mk(120), updatedAt: mk(120), completedBy:null, completedOn:null
     },
     {
       id: uid(), title:"Try adding a new task", description:"Click \"New task\" up top, or press N on your keyboard.",
-      priority:"low", dueDate:null, status:"daily", archived:false, order: t0 - 300000,
+      priority:"low", dueDate:null, status:"yettostart", archived:false, order: t0 - 300000,
       subtasks:[
         { id: uid(), text:"Open the New task modal", done:true },
         { id: uid(), text:"Give it a title and priority", done:false },

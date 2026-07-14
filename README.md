@@ -13,7 +13,7 @@ A modern, responsive, offline-first Kanban-style To-Do application built with pu
 
 ### 📌 Task Management
 - Create, edit and delete tasks
-- Daily, In Progress and Completed columns
+- Yet To Start, In Progress and Completed columns
 - Drag & Drop between columns
 - Automatic task timestamps
 - Due date support
@@ -85,7 +85,7 @@ Example
 Displays:
 
 - Total Tasks
-- Daily Tasks
+- Yet To Start Tasks
 - In Progress Tasks
 - Completed Tasks
 - Completion Percentage

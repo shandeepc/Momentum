@@ -7,7 +7,7 @@ All notable changes to this project will be documented here.
 ### Added
 - Kanban board
 - Drag & Drop
-- Daily / In Progress / Completed columns
+- Yet To Start / In Progress / Completed columns
 - Subtasks
 - Overall Progress Bar
 - Search

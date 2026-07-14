@@ -27,12 +27,11 @@
       <span class="pname" id="profileChipName"></span>
     </button>
     <button class="icon-btn" id="syncBtn" title="GitHub sync settings">
-      <!-- <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 5.64a9 9 0 1 1-12.73 0"/><path d="M12 3v9"/></svg> -->
-       <!-- <svg width="800px" height="800px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+     <!-- <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 5.64a9 9 0 1 1-12.73 0"/><path d="M12 3v9"/></svg> -->
+       <svg width="800px" height="800px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
   <path fill="none" stroke="currentColor" stroke-width="2" d="M5,19 L16,19 C19.866,19 23,15.866 23,12 L23,9 M8,15 L4,19 L8,23 M19,5 L8,5 C4.134,5 1,8.134 1,12 L1,15 M16,1 L20,5 L16,9"/>
-</svg> -->
-<svg width="512" height="512" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-  <!-- Sync arrows (moved farther from the center) -->
+</svg>
+<!-- <svg width="512" height="512" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
   <path
     fill="none"
     stroke="#b7b8c7"
@@ -54,7 +53,6 @@
        L20.5,4
        L16.5,8"/>
 
-  <!-- GitHub mark -->
   <g transform="translate(12 12) scale(0.05)">
     <path
       fill="#b7b8c7"
@@ -87,7 +85,7 @@
         C105,-58 58,-105 0,-105
         Z"/>
   </g>
-</svg>
+</svg> -->
 
       <span class="sync-dot" id="syncDot"></span>
     </button>
@@ -125,7 +123,7 @@
 
   <select class="select" id="statusFilterSelect">
     <option value="all">All columns</option>
-    <option value="daily">Daily only</option>
+    <option value="yettostart">Yet To Start only</option>
     <option value="inprogress">In Progress only</option>
     <option value="completed">Completed only</option>
   </select>
@@ -207,7 +205,7 @@
           <div class="field">
             <label for="statusInput">Column</label>
             <select id="statusInput">
-              <option value="daily">Daily</option>
+              <option value="yettostart">Yet To Start</option>
               <option value="inprogress">In Progress</option>
               <option value="completed">Completed</option>
             </select>

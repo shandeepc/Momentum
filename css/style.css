@@ -332,7 +332,7 @@ select.select:focus{ outline:none; border-color:var(--accent-1); }
   padding:16px 16px 12px 18px;
 }
 .col-dot{ width:9px; height:9px; border-radius:50%; flex:none; }
-.col-dot.daily{ background:#5FA8FF; }
+.col-dot.yettostart{ background:#5FA8FF; }
 .col-dot.inprogress{ background:#F5A623; }
 .col-dot.completed{ background:#1FBF88; }
 .column-title{
