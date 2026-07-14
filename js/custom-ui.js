@@ -1,6 +1,7 @@
 class CustomSelect {
   constructor(selectElement) {
     this.select = selectElement;
+    this.select._customSelect = this;
     this.select.style.display = 'none';
     this.wrapper = document.createElement('div');
     this.wrapper.className = 'custom-select-wrapper';
@@ -34,9 +35,18 @@ class CustomSelect {
     });
 
     this.select.addEventListener('change', () => {
-      this.updateTrigger();
-      this.buildOptions(); 
+      this.refresh();
     });
+
+    const observer = new MutationObserver(() => {
+      this.refresh();
+    });
+    observer.observe(this.select, { childList: true, subtree: true });
+  }
+
+  refresh() {
+    this.buildOptions();
+    this.updateTrigger();
   }
 
   buildOptions() {
@@ -220,7 +230,7 @@ class CustomDatePicker {
 
 // Initialize custom components
 document.addEventListener('DOMContentLoaded', () => {
-  const selects = ['statusFilterSelect', 'sortSelect', 'statusInput'];
+  const selects = ['statusFilterSelect', 'sortSelect', 'tagFilterSelect', 'statusInput'];
   selects.forEach(id => {
     const el = document.getElementById(id);
     if(el) new CustomSelect(el);

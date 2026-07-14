@@ -32,7 +32,8 @@ function defaultUserData(){
       theme: (typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark",
       sort: "manual",
       priorityFilter: "all",
-      statusFilter: "all"
+      statusFilter: "all",
+      tagFilter: "all"
     }
   };
 }
@@ -90,6 +91,28 @@ function saveState(){
 function uid(){
   return "t" + Date.now().toString(36) + Math.random().toString(36).slice(2,9);
 }
+
+function tagHueClass(str){
+  if(!str) return "tag-hue-0";
+  let hash = 0;
+  for(let i=0; i<str.length; i++){
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return "tag-hue-" + Math.abs(hash % 8);
+}
+
+const PRESET_TAGS = ["Frontend", "Backend", "Bug", "Feature", "Urgent", "Design"];
+function getAllTags(){
+  if(!state || !Array.isArray(state.tasks)) return PRESET_TAGS.slice();
+  const set = new Set(PRESET_TAGS);
+  state.tasks.forEach(t=>{
+    const arr = Array.isArray(t.tags) ? t.tags : (t.tag ? [t.tag] : []);
+    arr.forEach(tag => { if(tag) set.add(String(tag)); });
+  });
+  return Array.from(set).sort();
+}
+
 function nowISO(){ return new Date().toISOString(); }
 
 function fmtDate(iso){
@@ -530,9 +553,14 @@ const resultCountEl = document.getElementById("resultCount");
 function getVisibleTasks(){
   const q = searchInput.value.trim().toLowerCase();
   const pf = state.settings.priorityFilter;
+  const tf = state.settings.tagFilter || "all";
   return state.tasks.filter(t=>{
     if(t.archived) return false;
     if(pf !== "all" && t.priority !== pf) return false;
+    if(tf !== "all"){
+      const arr = Array.isArray(t.tags) ? t.tags : (t.tag ? [t.tag] : []);
+      if(!arr.includes(tf)) return false;
+    }
     if(q){
       const hay = (t.title + " " + (t.description||"")).toLowerCase();
       if(!hay.includes(q)) return false;
@@ -599,12 +627,16 @@ function subtaskPanelHTML(t){
 function cardHTML(t){
   const due = dueMeta(t.dueDate);
   const isDone = t.status === "completed";
+  const taskTags = Array.isArray(t.tags) ? t.tags : (t.tag ? [t.tag] : []);
+  const tagsHTML = taskTags.length ? `<div class="card-tags">${taskTags.map(tag => `<span class="tag-chip ${tagHueClass(tag)}" data-filter-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</span>`).join("")}</div>` : "";
+  const accentCls = t.colorAccent && t.colorAccent !== "none" ? ` accent-${t.colorAccent}` : "";
   return `
-  <div class="card priority-${t.priority}${isDone ? " done" : ""}" data-id="${t.id}" tabindex="0" role="group" aria-label="${escapeHtml(t.title)}">
+  <div class="card priority-${t.priority}${accentCls}${isDone ? " done" : ""}" data-id="${t.id}" tabindex="0" role="group" aria-label="${escapeHtml(t.title)}">
     <div class="card-top">
       <div class="card-title">${escapeHtml(t.title)}</div>
       <span class="pri-chip priority-${t.priority}">${t.priority}</span>
     </div>
+    ${tagsHTML}
     ${t.description ? `<div class="card-desc">${escapeHtml(t.description)}</div>` : ""}
     <div class="card-meta">
       ${due ? `<span class="meta-item due-chip ${due.cls}">${escapeHtml(due.label)}</span>` : ""}
@@ -655,6 +687,23 @@ function updateOverallProgress(totalActive){
     : `${doneCount} of ${totalActive} task${totalActive===1?"":"s"} completed`;
 }
 
+function updateTagFilterOptions(){
+  const sel = document.getElementById("tagFilterSelect");
+  if(!sel) return;
+  const current = state.settings.tagFilter || "all";
+  const tags = getAllTags();
+  const newHTML = `<option value="all">All tags</option>` +
+    tags.map(tag => `<option value="${escapeHtml(tag)}" ${tag === current ? "selected" : ""}>${escapeHtml(tag)}</option>`).join("");
+  const htmlChanged = sel.innerHTML !== newHTML;
+  if(htmlChanged){
+    sel.innerHTML = newHTML;
+  }
+  if(sel.value !== current || htmlChanged){
+    sel.value = current;
+    if(sel._customSelect) sel._customSelect.refresh();
+  }
+}
+
 function renderBoard(){
   const visible = getVisibleTasks();
   const q = searchInput.value.trim();
@@ -664,6 +713,7 @@ function renderBoard(){
 
   const totalActive = state.tasks.filter(t=>!t.archived).length;
   updateOverallProgress(totalActive);
+  updateTagFilterOptions();
   const sf = state.settings.statusFilter;
   const columnsToRender = sf === "all" ? COLUMNS : COLUMNS.filter(c=>c.key === sf);
   boardEl.classList.toggle("single-col", sf !== "all");
@@ -693,7 +743,7 @@ function renderBoard(){
     boardEl.appendChild(colEl);
   });
 
-  resultCountEl.textContent = q || state.settings.priorityFilter !== "all"
+  resultCountEl.textContent = q || state.settings.priorityFilter !== "all" || state.settings.tagFilter !== "all"
     ? `${totalShown} task${totalShown===1?"":"s"} shown`
     : `${state.tasks.filter(t=>!t.archived).length} active tasks`;
 
@@ -738,6 +788,15 @@ function attachCardListeners(){
       if(!s) return;
       s.done = cb.checked;
       t.updatedAt = nowISO();
+      saveState();
+      renderBoard();
+    });
+  });
+  document.querySelectorAll(".tag-chip[data-filter-tag]").forEach(chip=>{
+    chip.addEventListener("click", (e)=>{
+      e.stopPropagation();
+      const tag = chip.dataset.filterTag;
+      state.settings.tagFilter = (state.settings.tagFilter === tag) ? "all" : tag;
       saveState();
       renderBoard();
     });
@@ -1125,6 +1184,63 @@ priSelect.addEventListener("click", (e)=>{
   [...priSelect.children].forEach(c=>c.classList.toggle("active", c===opt));
 });
 
+const accentSelect = document.getElementById("accentSelect");
+let currentAccent = "none";
+if(accentSelect){
+  accentSelect.addEventListener("click", (e)=>{
+    const opt = e.target.closest(".accent-opt");
+    if(!opt) return;
+    currentAccent = opt.dataset.val;
+    [...accentSelect.children].forEach(c=>c.classList.toggle("active", c === opt));
+  });
+}
+
+/* ---------- Tag editor (inside the Add/Edit modal) ---------- */
+let currentTags = new Set();
+function renderTagEditor(){
+  const list = document.getElementById("tagPillsList");
+  if(!list) return;
+  const all = getAllTags();
+  currentTags.forEach(t => { if(!all.includes(t)) all.push(t); });
+  all.sort();
+
+  list.innerHTML = all.map(tag => {
+    const active = currentTags.has(tag);
+    return `<span class="tag-pill ${tagHueClass(tag)}${active ? " active" : ""}" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</span>`;
+  }).join("");
+
+  list.querySelectorAll(".tag-pill").forEach(pill => {
+    pill.addEventListener("click", ()=>{
+      const tag = pill.dataset.tag;
+      if(currentTags.has(tag)) currentTags.delete(tag); else currentTags.add(tag);
+      renderTagEditor();
+    });
+  });
+}
+
+function addTagFromInput(){
+  const input = document.getElementById("newTagInput");
+  if(!input) return;
+  const text = input.value.trim().slice(0, 30);
+  if(!text) return;
+  currentTags.add(text);
+  input.value = "";
+  renderTagEditor();
+  input.focus();
+}
+
+const addTagBtn = document.getElementById("addTagBtn");
+if(addTagBtn) addTagBtn.addEventListener("click", addTagFromInput);
+const newTagInput = document.getElementById("newTagInput");
+if(newTagInput){
+  newTagInput.addEventListener("keydown", (e)=>{
+    if(e.key === "Enter"){
+      e.preventDefault();
+      addTagFromInput();
+    }
+  });
+}
+
 /* ---------- Subtask editor (inside the Add/Edit modal) ---------- */
 let currentSubtasks = [];
 
@@ -1194,8 +1310,18 @@ function openTaskModal(id, presetStatus){
   descInput.value = t ? (t.description || "") : "";
   dueInput.value = t ? (t.dueDate || "") : "";
   statusInput.value = t ? t.status : (presetStatus || "yettostart");
+  if(statusInput._customSelect) statusInput._customSelect.refresh();
   currentPriority = t ? t.priority : "medium";
   [...priSelect.children].forEach(c=>c.classList.toggle("active", c.dataset.val === currentPriority));
+
+  currentAccent = t && t.colorAccent ? t.colorAccent : "none";
+  if(accentSelect){
+    [...accentSelect.children].forEach(c=>c.classList.toggle("active", c.dataset.val === currentAccent));
+  }
+
+  const taskTags = t ? (Array.isArray(t.tags) ? t.tags : (t.tag ? [t.tag] : [])) : [];
+  currentTags = new Set(taskTags);
+  renderTagEditor();
 
   currentSubtasks = t && Array.isArray(t.subtasks) ? t.subtasks.map(s => ({ ...s })) : [];
   renderSubtaskEditor();
@@ -1225,6 +1351,8 @@ taskForm.addEventListener("submit", (e)=>{
     t.title = title;
     t.description = descInput.value.trim();
     t.priority = currentPriority;
+    t.colorAccent = currentAccent;
+    t.tags = Array.from(currentTags);
     t.dueDate = dueInput.value || null;
     t.subtasks = currentSubtasks;
     const newStatus = statusInput.value;
@@ -1241,6 +1369,8 @@ taskForm.addEventListener("submit", (e)=>{
       title,
       description: descInput.value.trim(),
       priority: currentPriority,
+      colorAccent: currentAccent,
+      tags: Array.from(currentTags),
       dueDate: dueInput.value || null,
       status: statusInput.value,
       archived: false,
@@ -1434,11 +1564,173 @@ document.getElementById("statusFilterSelect").addEventListener("change", (e)=>{
   renderBoard();
 });
 
+const tagFilterSel = document.getElementById("tagFilterSelect");
+if(tagFilterSel){
+  tagFilterSel.addEventListener("change", (e)=>{
+    state.settings.tagFilter = e.target.value;
+    saveState();
+    renderBoard();
+  });
+}
+
 searchInput.addEventListener("input", debounce(()=>renderBoard(), 120));
 
 /* ============================================================
-   NAME PROMPT
+   BOARD INSIGHTS & ANALYTICS DASHBOARD
    ============================================================ */
+function openInsightsModal(){
+  renderInsights();
+  openOverlay("insightsModalOverlay");
+}
+
+function renderInsights(){
+  const body = document.getElementById("insightsBody");
+  if(!body || !state || !state.tasks) return;
+
+  const all = state.tasks.filter(t => !t.archived);
+  const totalActive = all.length;
+  const completed = all.filter(t => t.status === "completed");
+  const inProgress = all.filter(t => t.status === "inprogress");
+  const yetToStart = all.filter(t => t.status === "yettostart");
+
+  const completionRate = totalActive > 0 ? Math.round((completed.length / totalActive) * 100) : 0;
+
+  const todayDate = new Date(); todayDate.setHours(0,0,0,0);
+  const overdueCount = all.filter(t => {
+    if(t.status === "completed" || !t.dueDate) return false;
+    return new Date(t.dueDate + "T00:00:00") < todayDate;
+  }).length;
+
+  const days = [];
+  let maxDayCompleted = 1;
+  for(let i = 6; i >= 0; i--){
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().slice(0, 10);
+    const dayLabel = d.toLocaleDateString(undefined, { weekday: "short" });
+    const isToday = i === 0;
+
+    const count = completed.filter(t => {
+      const cDate = t.completedOn ? t.completedOn.slice(0, 10) : (t.updatedAt ? t.updatedAt.slice(0, 10) : "");
+      return cDate === dateStr;
+    }).length;
+
+    if(count > maxDayCompleted) maxDayCompleted = count;
+    days.push({ dayLabel, count, isToday });
+  }
+
+  const highCt = all.filter(t => t.priority === "high").length;
+  const medCt = all.filter(t => t.priority === "medium").length;
+  const lowCt = all.filter(t => t.priority === "low").length;
+
+  const tagCounts = {};
+  all.forEach(t => {
+    const arr = Array.isArray(t.tags) ? t.tags : (t.tag ? [t.tag] : []);
+    arr.forEach(tag => {
+      if(tag) tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+    });
+  });
+  const topTags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+  body.innerHTML = `
+    <div class="insights-grid">
+      <div class="insights-kpis">
+        <div class="kpi-card">
+          <div class="kpi-val">${totalActive}</div>
+          <div class="kpi-label">Active Tasks</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val">${completed.length}</div>
+          <div class="kpi-label">Completed</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val">${completionRate}%</div>
+          <div class="kpi-label">Completion Rate</div>
+        </div>
+        <div class="kpi-card" ${overdueCount > 0 ? 'style="border-color:var(--high);"' : ''}>
+          <div class="kpi-val" ${overdueCount > 0 ? 'style="color:var(--high);"' : ''}>${overdueCount}</div>
+          <div class="kpi-label">Overdue Tasks</div>
+        </div>
+      </div>
+
+      <div class="insights-panel">
+        <h3>7-Day Completion Velocity <span>Tasks finished per day</span></h3>
+        <div class="velocity-chart">
+          ${days.map(d => {
+            const pct = Math.round((d.count / maxDayCompleted) * 100);
+            return `
+              <div class="velocity-col">
+                <span class="velocity-count">${d.count || ''}</span>
+                <div class="velocity-bar-track">
+                  <div class="velocity-bar-fill${d.isToday ? " today" : ""}" style="height:${Math.max(pct, d.count > 0 ? 12 : 0)}%;"></div>
+                </div>
+                <span class="velocity-day" ${d.isToday ? 'style="color:var(--text-0); font-weight:800;"' : ''}>${d.isToday ? "Today" : d.dayLabel}</span>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      </div>
+
+      <div class="insights-row">
+        <div class="insights-panel">
+          <h3>Status Breakdown <span>Distribution across columns</span></h3>
+          <div class="breakdown-list">
+            <div class="breakdown-item">
+              <div class="breakdown-head"><span>Yet to start</span><b>${yetToStart.length} (${totalActive ? Math.round((yetToStart.length/totalActive)*100) : 0}%)</b></div>
+              <div class="breakdown-track"><div class="breakdown-fill yettostart" style="width:${totalActive ? Math.round((yetToStart.length/totalActive)*100) : 0}%"></div></div>
+            </div>
+            <div class="breakdown-item">
+              <div class="breakdown-head"><span>In progress</span><b>${inProgress.length} (${totalActive ? Math.round((inProgress.length/totalActive)*100) : 0}%)</b></div>
+              <div class="breakdown-track"><div class="breakdown-fill inprogress" style="width:${totalActive ? Math.round((inProgress.length/totalActive)*100) : 0}%"></div></div>
+            </div>
+            <div class="breakdown-item">
+              <div class="breakdown-head"><span>Completed</span><b>${completed.length} (${completionRate}%)</b></div>
+              <div class="breakdown-track"><div class="breakdown-fill completed" style="width:${completionRate}%"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="insights-panel">
+          <h3>Priority Distribution <span>High / Medium / Low</span></h3>
+          <div class="breakdown-list">
+            <div class="breakdown-item">
+              <div class="breakdown-head"><span>High Priority</span><b>${highCt} (${totalActive ? Math.round((highCt/totalActive)*100) : 0}%)</b></div>
+              <div class="breakdown-track"><div class="breakdown-fill high" style="width:${totalActive ? Math.round((highCt/totalActive)*100) : 0}%"></div></div>
+            </div>
+            <div class="breakdown-item">
+              <div class="breakdown-head"><span>Medium Priority</span><b>${medCt} (${totalActive ? Math.round((medCt/totalActive)*100) : 0}%)</b></div>
+              <div class="breakdown-track"><div class="breakdown-fill medium" style="width:${totalActive ? Math.round((medCt/totalActive)*100) : 0}%"></div></div>
+            </div>
+            <div class="breakdown-item">
+              <div class="breakdown-head"><span>Low Priority</span><b>${lowCt} (${totalActive ? Math.round((lowCt/totalActive)*100) : 0}%)</b></div>
+              <div class="breakdown-track"><div class="breakdown-fill low" style="width:${totalActive ? Math.round((lowCt/totalActive)*100) : 0}%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      ${topTags.length ? `
+      <div class="insights-panel">
+        <h3>Most Active Tags / Labels <span>Top tags used on active tasks</span></h3>
+        <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:4px;">
+          ${topTags.map(([tag, count]) => `
+            <div style="background:var(--bg-1); border:1px solid var(--border); border-radius:var(--radius-md); padding:8px 14px; display:flex; align-items:center; gap:8px;">
+              <span class="tag-chip ${tagHueClass(tag)}">${escapeHtml(tag)}</span>
+              <span style="font-size:13px; font-weight:700; color:var(--text-1);">${count} task${count===1 ? '' : 's'}</span>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+      ` : ""}
+    </div>
+  `;
+}
+
+const insightsBtn = document.getElementById("insightsBtn");
+if(insightsBtn) insightsBtn.addEventListener("click", openInsightsModal);
+const insightsModalClose = document.getElementById("insightsModalClose");
+if(insightsModalClose) insightsModalClose.addEventListener("click", ()=>closeOverlay("insightsModalOverlay"));
+
 /* ============================================================
    SHORTCUTS
    ============================================================ */
@@ -1502,8 +1794,12 @@ function seedIfEmpty(){
 }
 
 function syncToolbarToSettings(){
-  document.getElementById("sortSelect").value = state.settings.sort;
-  document.getElementById("statusFilterSelect").value = state.settings.statusFilter;
+  const sortSel = document.getElementById("sortSelect");
+  if(sortSel){ sortSel.value = state.settings.sort; if(sortSel._customSelect) sortSel._customSelect.refresh(); }
+  const statusSel = document.getElementById("statusFilterSelect");
+  if(statusSel){ statusSel.value = state.settings.statusFilter; if(statusSel._customSelect) statusSel._customSelect.refresh(); }
+  const tagSel = document.getElementById("tagFilterSelect");
+  if(tagSel){ tagSel.value = state.settings.tagFilter || "all"; if(tagSel._customSelect) tagSel._customSelect.refresh(); }
   document.querySelectorAll("#priorityFilterSeg button").forEach(b=>{
     b.classList.toggle("active", b.dataset.val === state.settings.priorityFilter);
   });
