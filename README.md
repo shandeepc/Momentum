@@ -10,6 +10,13 @@ A modern, responsive, offline-first Kanban-style To-Do application built with pu
 ![JavaScript](https://img.shields.io/badge/JavaScript-ES6-yellow)
 ---
 
+
+## 🚀 Getting Started
+
+### Visit [Momentum](https://momentum.shandeep.dev "Momentum Kanban Board")
+
+---
+
 ## ✨ Features
 
 ### 🚀 What's New in Version 2.0
@@ -155,20 +162,6 @@ Data is stored using:
 All changes are automatically saved.
 
 ---
-<style>
-  .alert-info {
-    color: #0c5460;
-    background-color: #d1ecf1;
-    border-color: #bee5eb;
-}
-.alert {
-    position: relative;
-    padding: .75rem 1.25rem;
-    margin-bottom: 1rem;
-    border: 1px solid transparent;
-    border-radius: .25rem;
-}
-</style>
 
 ### 🔄️ Github Sync (Optional)
 
@@ -178,19 +171,13 @@ Provide following details in the sync settings
 1. Repo owner - Your Github account name - e.g. **shandeepc**
 2. Repository - The name of the repository where you wish to store your board e.g. **Momentum-Storage**
 
-    <div class="alert alert-info" style="width:880px">
-    <svg height="20px" class="svg-inline--fa fa-info-circle fa-w-16" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="info-circle" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M256 8C119.043 8 8 119.083 8 256c0 136.997 111.043 248 248 248s248-111.003 248-248C504 119.083 392.957 8 256 8zm0 110c23.196 0 42 18.804 42 42s-18.804 42-42 42-42-18.804-42-42 18.804-42 42-42zm56 254c0 6.627-5.373 12-12 12h-88c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h12v-64h-12c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h64c6.627 0 12 5.373 12 12v100h12c6.627 0 12 5.373 12 12v24z"></path></svg>
-    <strong>Note:</strong>Make sure this repository is<strong>private</strong>, if not any one can view your borad if they vist this repository in Github
-  </div>
+    > **Note:** Make sure this repository is **Private**, if not any one can view your borad if they vist this repository in Github
 
 3. Branch - Name of git branch, you can leave it as default which is **main**
 4. File path - Json file path of the board in your repo, you can leave it as default which is **data/momentum-board.json**
 5. Personal access token - **Create one at github.com** → **Settings** → **Developer settings** → **Personal access tokens** → **Fine-grained tokens**.
 
-    <div class="alert alert-info" style="width:880px">
-    <svg height="20px" class="svg-inline--fa fa-info-circle fa-w-16" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="info-circle" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M256 8C119.043 8 8 119.083 8 256c0 136.997 111.043 248 248 248s248-111.003 248-248C504 119.083 392.957 8 256 8zm0 110c23.196 0 42 18.804 42 42s-18.804 42-42 42-42-18.804-42-42 18.804-42 42-42zm56 254c0 6.627-5.373 12-12 12h-88c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h12v-64h-12c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h64c6.627 0 12 5.373 12 12v100h12c6.627 0 12 5.373 12 12v24z"></path></svg>
-    <strong>Note:</strong><bold>Use a fine-grained personal access token</strong> scoped to only this one repo, with only "Contents" read/write permission. It's stored solely in this browser - never written into the synced file itself. If this repo is public, anyone can read the synced file once it's pushed, even though only token-holders can write to it.
-  </div>
+    > **Note:** Use a fine-grained personal access token scoped to only this one repo, with only "Contents" read/write permission. It's stored solely in this browser - never written into the synced file itself. If this repo is public, anyone can read the synced file once it's pushed, even though only token-holders can write to it.
 
 Click **Save & Sync now**
 
@@ -241,12 +228,6 @@ Works on
 | T | Toggle Theme |
 | Esc | Close Dialog |
 | ? | Help |
-
----
-
-## 🚀 Getting Started
-
-### Visit https://momentum.shandeep.dev
 
 ---
 
@@ -313,7 +294,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Shandeep Srinivas**
 
-IAM Consultant | SailPoint IdentityIQ Developer | Saviynt Engineer
+Cyber Security Leader | SailPoint Certified IdentityIQ Engineer | SailPoint Ambassador | Identity IQ | Identity Security Cloud | FAM | ForgeRock AM | ForgeRock IDM | Saviynt IGA | EntraID | CyberArk PAM
 
 GitHub:
 https://github.com/shandeepc
