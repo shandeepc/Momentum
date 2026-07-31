@@ -19,17 +19,19 @@ A modern, responsive, offline-first Kanban-style To-Do application built with pu
 
 ## ✨ Features
 
-### 🚀 What's New in Version 2.0
+### 🚀 What's New in Version 2.1
 - **Multi-Selection & Playing-Card Fan Drag**: Hold `Ctrl` (`Cmd` on Mac) to select multiple tasks and drag them effortlessly without releasing the key. Dragged items display as a realistic hand of playing cards fanned out clockwise from the bottom-left corner with a `+N` stack indicator badge!
 - **Custom Color-Coded Labels & Tag Filtering**: Create or select custom tags on the fly when adding/editing tasks. Filter your Kanban board instantly by tag using the new toolbar dropdown.
 - **Board Insights & Analytics Dashboard**: Open the interactive analytics modal to view real-time productivity statistics, completion rates, and visual breakdowns by status, priority, and tags.
 - **Card Cover Accents & Custom Color Highlights**: Choose vibrant cover color accents for individual task headers to organize and beautify your board.
 - **Unified Custom UI Component Engine**: All native `<select>` dropdowns across the toolbar and task modal have been upgraded to sleek, animated custom overlay components with `MutationObserver` auto-sync.
+- **Inline Subtask Editing**: Edit subtasks directly within the task modal without needing to recreate them.
+- **Task Duplication**: Quickly clone existing tasks along with their subtasks using the new Copy button.
 
 ---
 
 ### 📌 Task Management
-- Create, edit and delete tasks
+- Create, edit, copy, and delete tasks
 - Yet To Start, In Progress and Completed columns
 - Drag & Drop between columns (Single and Multi-Card Fan Drag)
 - Automatic task timestamps
@@ -54,6 +56,7 @@ Each task supports unlimited subtasks.
 Features include:
 
 - Add subtasks
+- Edit subtasks inline
 - Remove subtasks
 - Mark subtasks complete
 - Live checklist
@@ -251,6 +254,10 @@ Works on
 ✔ Card Cover Accents & Highlights
 
 ✔ Custom UI Dropdown Engine
+
+✔ Task Duplication
+
+✔ Inline Subtask Editing
 
 ✔ Drag & Drop
 
