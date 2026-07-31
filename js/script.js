@@ -656,6 +656,7 @@ function cardHTML(t){
       </div>` : ""}
     <div class="card-actions">
       <button class="edit-btn" data-id="${t.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Edit</button>
+      <button class="copy-btn" data-id="${t.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>Copy</button>
       ${isDone ? `<button class="archive-one-btn" data-id="${t.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="5" rx="1"/><path d="M4 9v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9"/></svg>Archive</button>` : ""}
       <button class="delete-btn danger" data-id="${t.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>Delete</button>
     </div>
@@ -757,6 +758,9 @@ function renderBoard(){
 function attachCardListeners(){
   document.querySelectorAll(".edit-btn").forEach(btn=>{
     btn.addEventListener("click", (e)=>{ e.stopPropagation(); openTaskModal(btn.dataset.id); });
+  });
+  document.querySelectorAll(".copy-btn").forEach(btn=>{
+    btn.addEventListener("click", (e)=>{ e.stopPropagation(); openTaskModal(btn.dataset.id, null, true); });
   });
   document.querySelectorAll(".delete-btn").forEach(btn=>{
     btn.addEventListener("click", (e)=>{ e.stopPropagation(); confirmDeleteTask(btn.dataset.id); });
@@ -1326,7 +1330,7 @@ function renderSubtaskEditor(){
     list.innerHTML = currentSubtasks.map(s => `
       <div class="subtask-row" data-id="${s.id}">
         <input type="checkbox" class="subtask-row-check" ${s.done ? "checked" : ""}>
-        <span class="subtask-row-text ${s.done ? "done" : ""}">${escapeHtml(s.text)}</span>
+        <span class="subtask-row-text ${s.done ? "done" : ""}" contenteditable="true" spellcheck="false">${escapeHtml(s.text)}</span>
         <button type="button" class="subtask-row-remove" title="Remove subtask">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
@@ -1344,6 +1348,20 @@ function renderSubtaskEditor(){
       const s = currentSubtasks.find(s=>s.id===id);
       if(s) s.done = cb.checked;
       renderSubtaskEditor();
+    });
+  });
+  list.querySelectorAll(".subtask-row-text").forEach(span=>{
+    span.addEventListener("blur", ()=>{
+      const id = span.closest(".subtask-row").dataset.id;
+      const s = currentSubtasks.find(s=>s.id===id);
+      if(s) s.text = span.textContent.trim() || s.text;
+      renderSubtaskEditor();
+    });
+    span.addEventListener("keydown", (e)=>{
+      if(e.key === "Enter") {
+        e.preventDefault();
+        span.blur();
+      }
     });
   });
   list.querySelectorAll(".subtask-row-remove").forEach(btn=>{
@@ -1373,17 +1391,17 @@ document.getElementById("subtaskInput").addEventListener("keydown", (e)=>{
   }
 });
 
-function openTaskModal(id, presetStatus){
-  editingId = id || null;
+function openTaskModal(id, presetStatus, isCopy = false){
+  editingId = (id && !isCopy) ? id : null;
   const t = id ? findTask(id) : null;
 
-  document.getElementById("taskModalTitle").textContent = t ? "Edit task" : "New task";
-  document.getElementById("taskSaveBtn").textContent = t ? "Save changes" : "Add task";
+  document.getElementById("taskModalTitle").textContent = t ? (isCopy ? "Copy task" : "Edit task") : "New task";
+  document.getElementById("taskSaveBtn").textContent = t && !isCopy ? "Save changes" : "Add task";
 
-  titleInput.value = t ? t.title : "";
+  titleInput.value = t ? (isCopy ? t.title + " (Copy)" : t.title) : "";
   descInput.value = t ? (t.description || "") : "";
   dueInput.value = t ? (t.dueDate || "") : "";
-  statusInput.value = t ? t.status : (presetStatus || "yettostart");
+  statusInput.value = t ? (isCopy ? "yettostart" : t.status) : (presetStatus || "yettostart");
   if(statusInput._customSelect) statusInput._customSelect.refresh();
   currentPriority = t ? t.priority : "medium";
   [...priSelect.children].forEach(c=>c.classList.toggle("active", c.dataset.val === currentPriority));
@@ -1397,7 +1415,7 @@ function openTaskModal(id, presetStatus){
   currentTags = new Set(taskTags);
   renderTagEditor();
 
-  currentSubtasks = t && Array.isArray(t.subtasks) ? t.subtasks.map(s => ({ ...s })) : [];
+  currentSubtasks = t && Array.isArray(t.subtasks) ? t.subtasks.map(s => ({ ...s, done: isCopy ? false : s.done })) : [];
   renderSubtaskEditor();
 
   if(t){
